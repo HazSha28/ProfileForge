@@ -15,21 +15,10 @@
   <aside class="pf-sidebar" id="sidebar">
 
     <!-- Brand -->
-      <div class="pf-sidebar__brand">
-        <img src="/static/img/logo.png" alt="ProfileForge" class="pf-sidebar__logo" />
-        <div class="pf-sidebar__brand-text">
-          <span class="pf-sidebar__brand-name">ProfileForge</span>
-        </div>
-        <button class="pf-sidebar__collapse-btn" id="sidebar-collapse" title="Toggle sidebar">
-          <!-- Chevrons left = collapse, right = expand -->
-          <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>
-          </svg>
-          <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <path d="M13 7l5 5-5 5M6 7l5 5-5 5"/>
-          </svg>
-        </button>
-      </div>
+    <div class="pf-sidebar__brand">
+      <img src="/static/img/logo.png" alt="ProfileForge" class="pf-sidebar__logo" />
+      <span class="pf-sidebar__brand-name">ProfileForge</span>
+    </div>
 
     <!-- Nav -->
     <nav class="pf-sidebar__nav">
@@ -123,12 +112,11 @@
 
     <!-- Topbar -->
     <header class="pf-topbar">
-      <button class="pf-topbar__menu" id="sidebar-mobile-toggle" aria-label="Toggle menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <line x1="3" y1="12" x2="21" y2="12"/>
-          <line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
+      <!-- Single toggle — works on desktop (collapse/expand) and mobile (show/hide) -->
+      <button class="pf-topbar__sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
+        <span class="pf-topbar__sidebar-toggle__bar"></span>
+        <span class="pf-topbar__sidebar-toggle__bar"></span>
+        <span class="pf-topbar__sidebar-toggle__bar"></span>
       </button>
       <div class="pf-topbar__breadcrumb">
         {% block breadcrumb %}<span class="pf-breadcrumb__item">ProfileForge</span>{% endblock %}
@@ -143,6 +131,9 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+
+  <!-- Mobile overlay — tapping it closes the sidebar -->
+  <div class="pf-sidebar-overlay" id="sidebar-overlay"></div>
 
   <script src="/static/js/base.js"></script>
   {% block scripts %}{% endblock %}
