@@ -128,7 +128,10 @@ def _normalise_record(record: CandidateRecord) -> CandidateRecord:
         before merging so that comparisons and deduplication are done on
         the canonical forms (e.g. comparing "+14155552671" not "(415)555-2671").
     """
-    country_hint = record.location.country  # pass to phone normalizer
+    # Normalise country to ISO Alpha-2 FIRST so the phone normalizer gets
+    # a valid region code (phonenumbers only accepts "US", not "United States").
+    normalised_location = normalize_location(record.location)
+    country_hint = normalised_location.country   # e.g. "US", "GB", or None
 
     return CandidateRecord(
         source=record.source,
@@ -140,7 +143,7 @@ def _normalise_record(record: CandidateRecord) -> CandidateRecord:
 
         phones=normalize_phones(record.phones, country_hint=country_hint),
 
-        location=normalize_location(record.location),
+        location=normalised_location,
 
         links=record.links,   # URLs kept as-is (no normalisation needed)
 
