@@ -81,14 +81,14 @@ async def github_login(request: Request):
 
 @router.get("/auth/github/callback", name="github_callback")
 async def github_callback(request: Request):
-    await oauth.github.authorize_access_token(request)
+    token = await oauth.github.authorize_access_token(request)
 
-    resp = await oauth.github.get("user", token=request.session.get("github_token"))
+    resp = await oauth.github.get("user", token=token)
     profile = resp.json()
 
     email = profile.get("email")
     if not email:
-        emails_resp = await oauth.github.get("user/emails")
+        emails_resp = await oauth.github.get("user/emails", token=token)
         emails = emails_resp.json()
         primary = next(
             (e["email"] for e in emails if e.get("primary") and e.get("verified")),
