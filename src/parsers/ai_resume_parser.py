@@ -85,13 +85,19 @@ Extract the following fields from the resume text below:
   "other_links": []
 }
 
-Rules:
-- Skills must only contain technologies explicitly mentioned in the text.
+Rules for skills extraction:
+- Include ALL of the following in the "skills" array:
+  1. Technical skills: programming languages, frameworks, libraries, tools, databases, cloud platforms
+  2. Soft skills: communication, leadership, teamwork, problem solving, time management, etc.
+  3. Extracurricular skills: event management, public speaking, volunteering, sports, debate, etc.
+  4. Any skill or activity explicitly listed under any section named: Skills, Technical Skills,
+     Soft Skills, Core Skills, Tools, Technologies, Extracurricular, Activities, Interests, Strengths
+- Extract the skill name exactly as written — do NOT paraphrase or infer
+- If a skill is listed under "Soft Skills:" or "Extracurricular:" sub-sections, still include it
 - If GitHub, LinkedIn or Portfolio URLs exist anywhere in the resume, extract them.
 - Preserve date strings exactly as written in the resume.
 - Do not calculate years_experience if it is not explicitly mentioned — return null.
 - Do not invent company names.
-- Do not infer skills from job descriptions unless they are explicitly listed.
 - Return null for any field that is not present.
 - Return ONLY the JSON object. Nothing else.
 

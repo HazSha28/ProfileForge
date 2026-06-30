@@ -34,94 +34,160 @@ logger = get_logger(__name__)
 # The key is any alias (lowercase), the value is the canonical display name.
 # ---------------------------------------------------------------------------
 SKILL_ALIASES: dict[str, str] = {
-    # JavaScript family
-    "js": "JavaScript",
-    "javascript": "JavaScript",
-    "java script": "JavaScript",
-    "ecmascript": "JavaScript",
-    "es6": "JavaScript",
-    "es2015": "JavaScript",
+    # ── JavaScript family ──────────────────────────────────────
+    "js": "JavaScript", "javascript": "JavaScript",
+    "java script": "JavaScript", "ecmascript": "JavaScript",
+    "es6": "JavaScript", "es2015": "JavaScript",
 
-    # TypeScript
-    "ts": "TypeScript",
-    "typescript": "TypeScript",
+    # ── TypeScript ─────────────────────────────────────────────
+    "ts": "TypeScript", "typescript": "TypeScript",
 
-    # Python
-    "python": "Python",
-    "python3": "Python",
-    "py": "Python",
+    # ── Python ─────────────────────────────────────────────────
+    "python": "Python", "python3": "Python", "py": "Python",
 
-    # Java
+    # ── Java ───────────────────────────────────────────────────
     "java": "Java",
 
-    # Node.js
-    "node": "Node.js",
-    "nodejs": "Node.js",
-    "node.js": "Node.js",
+    # ── C family ───────────────────────────────────────────────
+    "c": "C", "c programming": "C",
+    "c++": "C++", "cpp": "C++",
+    "c#": "C#", "csharp": "C#", "c sharp": "C#",
 
-    # React
-    "react": "React",
-    "reactjs": "React",
-    "react.js": "React",
+    # ── Web frameworks ─────────────────────────────────────────
+    "node": "Node.js", "nodejs": "Node.js", "node.js": "Node.js",
+    "react": "React", "reactjs": "React", "react.js": "React",
+    "vue": "Vue.js", "vuejs": "Vue.js", "vue.js": "Vue.js",
+    "angular": "Angular", "angularjs": "Angular",
+    "django": "Django", "flask": "Flask", "fastapi": "FastAPI",
+    "spring": "Spring", "spring boot": "Spring Boot",
+    "express": "Express.js", "express.js": "Express.js",
+    "next.js": "Next.js", "nextjs": "Next.js",
 
-    # Vue
-    "vue": "Vue.js",
-    "vuejs": "Vue.js",
-    "vue.js": "Vue.js",
+    # ── Mobile ─────────────────────────────────────────────────
+    "kotlin": "Kotlin", "swift": "Swift",
+    "flutter": "Flutter", "react native": "React Native",
+    "android": "Android", "ios": "iOS",
 
-    # SQL / Databases
-    "sql": "SQL",
-    "mysql": "MySQL",
-    "postgresql": "PostgreSQL",
-    "postgres": "PostgreSQL",
-    "mongo": "MongoDB",
-    "mongodb": "MongoDB",
+    # ── Databases ──────────────────────────────────────────────
+    "sql": "SQL", "mysql": "MySQL",
+    "postgresql": "PostgreSQL", "postgres": "PostgreSQL",
+    "mongo": "MongoDB", "mongodb": "MongoDB",
+    "redis": "Redis", "sqlite": "SQLite",
+    "oracle": "Oracle DB", "cassandra": "Cassandra",
+    "elasticsearch": "Elasticsearch",
 
-    # Cloud
-    "aws": "AWS",
-    "amazon web services": "AWS",
-    "gcp": "GCP",
-    "google cloud": "GCP",
-    "google cloud platform": "GCP",
-    "azure": "Azure",
-    "microsoft azure": "Azure",
+    # ── Cloud ──────────────────────────────────────────────────
+    "aws": "AWS", "amazon web services": "AWS",
+    "gcp": "GCP", "google cloud": "GCP", "google cloud platform": "GCP",
+    "azure": "Azure", "microsoft azure": "Azure",
 
-    # Containers / DevOps
-    "docker": "Docker",
-    "kubernetes": "Kubernetes",
-    "k8s": "Kubernetes",
-    "ci/cd": "CI/CD",
-    "cicd": "CI/CD",
+    # ── DevOps / Infra ─────────────────────────────────────────
+    "docker": "Docker", "kubernetes": "Kubernetes", "k8s": "Kubernetes",
+    "ci/cd": "CI/CD", "cicd": "CI/CD",
+    "jenkins": "Jenkins", "github actions": "GitHub Actions",
+    "terraform": "Terraform", "ansible": "Ansible",
+    "linux": "Linux", "unix": "Unix", "bash": "Bash",
+    "nginx": "Nginx", "apache": "Apache",
 
-    # Machine Learning / Data
-    "ml": "Machine Learning",
-    "machine learning": "Machine Learning",
-    "deep learning": "Deep Learning",
-    "dl": "Deep Learning",
-    "pandas": "Pandas",
-    "numpy": "NumPy",
-    "scikit-learn": "scikit-learn",
-    "sklearn": "scikit-learn",
+    # ── AI / ML / Data ─────────────────────────────────────────
+    "ml": "Machine Learning", "machine learning": "Machine Learning",
+    "deep learning": "Deep Learning", "dl": "Deep Learning",
+    "ai": "Artificial Intelligence", "artificial intelligence": "Artificial Intelligence",
+    "nlp": "NLP", "natural language processing": "NLP",
+    "computer vision": "Computer Vision", "cv": "Computer Vision",
+    "data science": "Data Science", "data analysis": "Data Analysis",
+    "data analytics": "Data Analytics",
+    "pandas": "Pandas", "numpy": "NumPy",
+    "scikit-learn": "scikit-learn", "sklearn": "scikit-learn",
+    "tensorflow": "TensorFlow", "keras": "Keras", "pytorch": "PyTorch",
+    "matplotlib": "Matplotlib", "seaborn": "Seaborn",
+    "tableau": "Tableau", "power bi": "Power BI",
 
-    # Other common skills
-    "git": "Git",
-    "github": "Git",         # normalise as the tool, not the platform
-    "rest": "REST APIs",
-    "rest api": "REST APIs",
-    "restful": "REST APIs",
-    "graphql": "GraphQL",
-    "html": "HTML",
-    "css": "CSS",
-    "c#": "C#",
-    "csharp": "C#",
-    "c++": "C++",
-    "cpp": "C++",
-    "go": "Go",
-    "golang": "Go",
-    "rust": "Rust",
-    "kotlin": "Kotlin",
-    "swift": "Swift",
-    "r": "R",
+    # ── APIs / Architecture ────────────────────────────────────
+    "rest": "REST APIs", "rest api": "REST APIs", "restful": "REST APIs",
+    "graphql": "GraphQL", "api": "API Development",    "microservices": "Microservices", "soap": "SOAP",
+
+    # ── Web fundamentals ───────────────────────────────────────
+    "html": "HTML", "html5": "HTML",
+    "css": "CSS", "css3": "CSS",
+    "sass": "Sass", "scss": "Sass",
+    "bootstrap": "Bootstrap", "tailwind": "Tailwind CSS",
+    "tailwind css": "Tailwind CSS",
+
+    # ── Version control / Tools ────────────────────────────────
+    "git": "Git", "github": "GitHub", "gitlab": "GitLab",
+    "bitbucket": "Bitbucket",
+    "jira": "Jira", "confluence": "Confluence",
+    "postman": "Postman", "swagger": "Swagger",
+    "vs code": "VS Code", "vscode": "VS Code",
+    "intellij": "IntelliJ IDEA",
+
+    # ── Other languages ────────────────────────────────────────
+    "go": "Go", "golang": "Go",
+    "rust": "Rust", "ruby": "Ruby", "rails": "Ruby on Rails",
+    "php": "PHP", "scala": "Scala",
+    "r": "R", "matlab": "MATLAB",
+
+    # ── Soft Skills ────────────────────────────────────────────
+    "communication": "Communication",
+    "verbal communication": "Communication",
+    "written communication": "Communication",
+    "leadership": "Leadership",
+    "team leadership": "Leadership",
+    "teamwork": "Teamwork",
+    "team player": "Teamwork",
+    "collaboration": "Collaboration",
+    "problem solving": "Problem Solving",
+    "problem-solving": "Problem Solving",
+    "critical thinking": "Critical Thinking",
+    "analytical thinking": "Analytical Thinking",
+    "analytical skills": "Analytical Thinking",
+    "time management": "Time Management",
+    "project management": "Project Management",
+    "adaptability": "Adaptability",
+    "adaptable": "Adaptability",
+    "creativity": "Creativity",
+    "creative thinking": "Creativity",
+    "attention to detail": "Attention to Detail",
+    "detail oriented": "Attention to Detail",
+    "decision making": "Decision Making",
+    "decision-making": "Decision Making",
+    "multitasking": "Multitasking",
+    "organisational skills": "Organisational Skills",
+    "organizational skills": "Organisational Skills",
+    "presentation skills": "Presentation Skills",
+    "public speaking": "Public Speaking",
+    "interpersonal skills": "Interpersonal Skills",
+    "negotiation": "Negotiation",
+    "conflict resolution": "Conflict Resolution",
+    "mentoring": "Mentoring",
+    "coaching": "Coaching",
+    "research": "Research",
+    "self motivated": "Self-motivated",
+    "self-motivated": "Self-motivated",
+    "initiative": "Initiative",
+    "work ethic": "Work Ethic",
+    "fast learner": "Quick Learner",
+    "quick learner": "Quick Learner",
+
+    # ── Extracurricular / Activities ───────────────────────────
+    "event management": "Event Management",
+    "event organizer": "Event Management",
+    "volunteer": "Volunteering",
+    "volunteering": "Volunteering",
+    "community service": "Community Service",
+    "nss": "NSS",
+    "ncc": "NCC",
+    "sports": "Sports",
+    "athletics": "Athletics",
+    "debate": "Debate",
+    "quiz": "Quiz",
+    "hackathon": "Hackathon Participation",
+    "hackathons": "Hackathon Participation",
+    "open source": "Open Source Contribution",
+    "open source contribution": "Open Source Contribution",
+    "blogging": "Technical Blogging",
+    "technical writing": "Technical Writing",
 }
 
 
@@ -154,9 +220,12 @@ def normalize_skill(raw: Optional[str]) -> Optional[str]:
     if canonical:
         return canonical
 
-    # No alias found — return title-cased original
-    logger.debug("No canonical alias for skill %r, keeping as-is (title-cased)", cleaned)
-    return cleaned.title()
+    # No alias found — preserve original casing if it contains uppercase
+    # (e.g. "REST APIs" should stay "REST APIs", not become "Rest Apis")
+    # Only title-case if the original is all-lowercase
+    if cleaned == cleaned.lower():
+        return cleaned.title()
+    return cleaned
 
 
 def normalize_skills(raw_list: list[str]) -> list[str]:

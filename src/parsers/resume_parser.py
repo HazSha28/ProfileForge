@@ -204,9 +204,33 @@ _RE_DATE_RANGE = re.compile(
     re.IGNORECASE,
 )
 
-# Skills section header — detects a line that introduces a skills list
+# Skills section header — matches ALL skill-related section headers:
+# "Skills", "Technical Skills", "Soft Skills", "Core Skills",
+# "Tools & Technologies", "Extracurricular", "Activities", etc.
 _RE_SKILLS_HEADER = re.compile(
-    r"^\s*(?:technical\s+)?skills?(?:\s*[:&/]|$)", re.IGNORECASE
+    r"^\s*(?:"
+    r"(?:technical\s+|soft\s+|core\s+|key\s+|professional\s+|transferable\s+)?"
+    r"skills?|"
+    r"tools?\s*(?:&|and)?\s*(?:technologies|tech|frameworks?)?|"
+    r"technologies|tech\s*stack|"
+    r"competenc(?:y|ies)|capabilities|"
+    r"extra[\s\-]?curricular|activities|"
+    r"hobbies\s*(?:&|and)?\s*interests?|"
+    r"interests?|strengths?"
+    r")\s*[:\-]?\s*$",
+    re.IGNORECASE,
+)
+
+# Sub-section header WITHIN a skills block — e.g. "Technical Skills:",
+# "Soft Skills:", "Tools:" — these delimit categories within one skills block
+_RE_SKILLS_SUBSECTION = re.compile(
+    r"^\s*(?:"
+    r"(?:technical|soft|core|key|professional|hard|other)\s+skills?"
+    r"|tools?\s*(?:&|and)?\s*(?:technologies|frameworks?)?"
+    r"|languages?|frameworks?|platforms?"
+    r"|extra[\s\-]?curricular|activities|achievements?"
+    r")\s*[:]\s*",
+    re.IGNORECASE,
 )
 
 # Common skill delimiters: comma, pipe, bullet, newline
@@ -442,37 +466,81 @@ def _extract_location(text: str) -> LocationData:
 
 def _extract_skills(text: str) -> list[str]:
     """
-    Locate a 'Skills' section in the text and extract items from it.
+    Extract all skills from resume text — technical, soft, and extracurricular.
 
-    Strategy:
-    1. Find the line that starts the skills section.
-    2. Collect lines until the next section header or end of text.
-    3. Split on common delimiters (comma, pipe, bullet).
+    Handles multiple formats:
+      - Single "Skills" section with comma/pipe/bullet delimited items
+      - Sub-sections: "Technical Skills:", "Soft Skills:", "Tools:", etc.
+      - Standalone "Extracurricular Activities" section
+      - Inline skill lists on one or multiple lines
+
+    Stops collecting when it hits a non-skills major section header.
     """
     lines = text.split("\n")
     skills_lines: list[str] = []
-    in_skills = False
+    in_skills_block = False
 
     for line in lines:
-        if _RE_SKILLS_HEADER.match(line):
-            in_skills = True
-            # The skills may start on the same line after the header
-            after_header = re.sub(r"^\s*(?:technical\s+)?skills?\s*[:&/]?\s*", "", line, flags=re.IGNORECASE)
-            if after_header.strip():
+        stripped = line.strip()
+
+        # ── Start a new skills block ──────────────────────────
+        if _RE_SKILLS_HEADER.match(stripped):
+            in_skills_block = True
+            # Skills may start on the same line after the header label
+            after_header = re.sub(
+                r"^\s*(?:technical\s+|soft\s+|core\s+|key\s+|professional\s+|"
+                r"transferable\s+|hard\s+|other\s+)?skills?\s*[:&/]?\s*|"
+                r"^\s*tools?\s*(?:&|and)?\s*(?:technologies|tech|frameworks?)?\s*[:]\s*|"
+                r"^\s*extra[\s\-]?curricular\s*(?:activities)?\s*[:]\s*|"
+                r"^\s*activities\s*[:]\s*|"
+                r"^\s*interests?\s*[:]\s*|"
+                r"^\s*strengths?\s*[:]\s*",
+                "", stripped, flags=re.IGNORECASE
+            ).strip()
+            if after_header:
                 skills_lines.append(after_header)
             continue
 
-        if in_skills:
-            # Stop when we hit the next section header (all-caps line or
-            # a known section keyword)
-            if _is_section_header(line):
-                break
-            skills_lines.append(line)
+        if in_skills_block:
+            # ── Sub-section header within skills block ────────
+            # e.g. "Technical Skills: Python, Django" — strip label, keep values
+            sub_match = _RE_SKILLS_SUBSECTION.match(stripped)
+            if sub_match:
+                after_sub = stripped[sub_match.end():].strip()
+                if after_sub:
+                    skills_lines.append(after_sub)
+                continue
 
-    combined = " ".join(skills_lines)
-    raw_skills = [s.strip() for s in _RE_SKILL_SPLIT.split(combined) if s.strip()]
-    # Filter out very long strings (likely sentences, not skill names)
-    return [s for s in raw_skills if len(s) <= 40]
+            # ── Stop on a major non-skills section ───────────
+            if _is_major_section_header(stripped):
+                break
+
+            # ── Collect this line ─────────────────────────────
+            if stripped:
+                skills_lines.append(stripped)
+
+    # Split collected lines on common delimiters
+    combined = " | ".join(skills_lines)   # use | so we can split uniformly
+    raw_items = re.split(r"[,|•·–\-\n/]+", combined)
+
+    result: list[str] = []
+    seen:   set[str]  = set()
+
+    for item in raw_items:
+        item = item.strip().strip("•·–-").strip()
+        # Filter: non-empty, not too long (sentences), not a sub-header label
+        if (
+            item
+            and 2 <= len(item) <= 50
+            and not _RE_SKILLS_SUBSECTION.match(item + ":")
+            and not re.match(r"^\d+[\.\)]\s*", item)   # numbered list artifacts
+        ):
+            key = item.lower()
+            if key not in seen:
+                seen.add(key)
+                result.append(item)
+
+    return result
 
 
 def _extract_experience(text: str) -> tuple[list[ExperienceEntry], Optional[int]]:
@@ -556,21 +624,47 @@ def _is_section_header(line: str) -> bool:
     Heuristic: a section header is a short line that is all-caps or matches
     a known resume section keyword.
     """
+    return _is_major_section_header(line)
+
+
+def _is_major_section_header(line: str) -> bool:
+    """
+    Returns True if the line is a major resume section header that should
+    STOP skill collection. Skills sub-sections are NOT major headers.
+    """
     stripped = line.strip()
     if not stripped:
         return False
 
-    known_headers = {
-        "experience", "work experience", "employment", "education",
-        "projects", "certifications", "awards", "publications",
-        "languages", "interests", "summary", "objective", "references",
+    # Major sections that terminate skill collection
+    _MAJOR_SECTIONS = {
+        "experience", "work experience", "professional experience",
+        "employment", "employment history",
+        "education", "academic background", "qualifications",
+        "projects", "personal projects", "academic projects",
+        "certifications", "certificates", "achievements", "awards",
+        "publications", "research", "languages",
+        "summary", "objective", "profile", "about",
+        "references", "declaration",
+        "internship", "internships",
     }
 
-    if stripped.lower() in known_headers:
+    lower = stripped.lower()
+
+    # Exact match against known major sections
+    if lower in _MAJOR_SECTIONS:
         return True
 
-    # All-caps short line (e.g. "EXPERIENCE", "EDUCATION")
-    if stripped.isupper() and len(stripped.split()) <= 4:
+    # All-caps short line (e.g. "EXPERIENCE", "EDUCATION", "PROJECTS")
+    if stripped.isupper() and 2 <= len(stripped.split()) <= 4:
+        return True
+
+    # Title-case short heading ending without colon (e.g. "Work Experience")
+    if (
+        len(stripped.split()) <= 4
+        and not stripped.endswith(":")
+        and any(lower.startswith(s) for s in _MAJOR_SECTIONS)
+    ):
         return True
 
     return False
