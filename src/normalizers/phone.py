@@ -3,20 +3,27 @@ src/normalizers/phone.py
 ------------------------
 WHY THIS FILE EXISTS
 ------------------------
-Phone numbers appear in dozens of formats: "(415) 555-2671", "415-555-2671",
-"+1 415 555 2671", "4155552671". E.164 (+14155552671) is the one format
-all telephony systems understand. This module converts anything recognisable
-into E.164 and discards the rest.
+Phone numbers appear in dozens of formats. E.164 is the universal standard.
+This module converts any recognisable format into E.164 and discards the rest.
+
+Supported formats (examples):
+  9876543210          → +919876543210  (with country hint "IN")
+  +91 9876543210      → +919876543210
+  +91-9876543210      → +919876543210
+  (+91)9876543210     → +919876543210
+  91 9876543210       → +919876543210
+  (415) 555-2671      → +14155552671  (with country hint "US")
+  +44 20 7946 0958    → +442079460958
 
 PIPELINE CONNECTION
 -------------------
   Called by the Merger after parsing, before deduplication.
-  Input:  raw phone string + optional country hint (ISO Alpha-2)
-  Output: E.164 phone string, or None if invalid/unrecognised
+  country_hint must be ISO Alpha-2 (e.g. "IN", "US") — not a full name.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Optional
 
 import phonenumbers
@@ -26,6 +33,41 @@ from src.utils.helpers import get_logger, safe_strip
 
 logger = get_logger(__name__)
 
+# ---------------------------------------------------------------------------
+# Pre-processing: clean common formatting noise before parsing
+# ---------------------------------------------------------------------------
+
+# Matches (+91), (091), etc. — brackets around country code are non-standard
+_PAREN_CC_RE = re.compile(r"^\((\+?\d{1,4})\)\s*")
+
+
+def _preprocess_phone(raw: str) -> str:
+    """
+    Clean formatting noise that confuses the phonenumbers parser.
+
+    Examples:
+      "(+91)9876543210"  → "+919876543210"
+      "(091) 9876543210" → "0919876543210"
+      "91 9876543210"    → "91 9876543210"  (unchanged — parser handles it)
+    """
+    cleaned = raw.strip()
+
+    # Remove parentheses around country code: (+91)... → +91...
+    m = _PAREN_CC_RE.match(cleaned)
+    if m:
+        cc = m.group(1)
+        rest = cleaned[m.end():]
+        cleaned = cc + rest
+
+    # Normalise separators: dots and multiple spaces → single space
+    cleaned = re.sub(r"[\s\-\.]+", " ", cleaned).strip()
+
+    return cleaned
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 def normalize_phone(
     raw: Optional[str],
@@ -35,47 +77,40 @@ def normalize_phone(
     Normalize a raw phone number string to E.164 format.
 
     Args:
-        raw:          The raw phone string (e.g. "(415) 555-2671").
-        country_hint: ISO Alpha-2 country code to use when the number has
-                      no country prefix (e.g. "US", "GB"). This comes from
-                      the location field of the same record.
+        raw:          The raw phone string.
+        country_hint: ISO Alpha-2 region code (e.g. "IN", "US", "GB").
+                      MUST be Alpha-2 — not a full country name.
 
     Returns:
-        E.164 formatted phone string (e.g. "+14155552671") or None.
-
-    Examples:
-        normalize_phone("(415) 555-2671", "US")  -> "+14155552671"
-        normalize_phone("+44 20 7946 0958")       -> "+442079460958"
-        normalize_phone("not-a-phone")             -> None  (warning logged)
-
-    WHY phonenumbers library:
-        The `phonenumbers` library (a Python port of Google's libphonenumber)
-        handles every international format and country prefix rule. Writing
-        this logic ourselves would take weeks and still be incomplete.
+        E.164 string (e.g. "+919876543210") or None if unparseable.
     """
     cleaned = safe_strip(raw)
     if not cleaned:
         return None
 
-    try:
-        # CONCEPT — default_region:
-        #   If the number has no country code (e.g. "415-555-2671") the parser
-        #   needs a hint about which country's numbering plan to apply.
-        #   We pass `country_hint` (e.g. "US") as the default_region.
-        #   If no hint is available, we pass None and the library will still
-        #   try its best with fully international numbers.
-        parsed = phonenumbers.parse(cleaned, country_hint)
+    cleaned = _preprocess_phone(cleaned)
 
-        if not phonenumbers.is_valid_number(parsed):
-            logger.warning("Phone number is not valid, skipping: %r", raw)
-            return None
+    # Strategy 1: Try with the provided country hint
+    result = _try_parse(cleaned, country_hint)
+    if result:
+        return result
 
-        # PhoneNumberFormat.E164 produces the +countrycode+number format
-        return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+    # Strategy 2: If no country code and hint failed, try "IN" and "US" as
+    # common fallbacks for 10-digit numbers
+    digits_only = re.sub(r"\D", "", cleaned)
+    if len(digits_only) == 10 and not cleaned.startswith("+"):
+        for fallback in ("IN", "US"):
+            if fallback != country_hint:
+                result = _try_parse(cleaned, fallback)
+                if result:
+                    logger.debug(
+                        "Phone %r matched with fallback region %s → %s",
+                        raw, fallback, result
+                    )
+                    return result
 
-    except NumberParseException as exc:
-        logger.warning("Could not parse phone number %r: %s", raw, exc)
-        return None
+    logger.warning("Could not parse phone number %r (hint=%r)", raw, country_hint)
+    return None
 
 
 def normalize_phones(
@@ -83,17 +118,11 @@ def normalize_phones(
     country_hint: Optional[str] = None,
 ) -> list[str]:
     """
-    Normalize a list of raw phone strings, dropping any that are invalid.
-
-    Args:
-        raw_list:     List of raw phone strings.
-        country_hint: ISO Alpha-2 country hint applied to all numbers.
-
-    Returns:
-        Deduplicated list of valid E.164 phone strings.
+    Normalize a list of raw phone strings, dropping invalid ones.
+    Returns a deduplicated list of E.164 strings.
     """
-    seen: set[str] = set()
-    result: list[str] = []
+    seen:   set[str]   = set()
+    result: list[str]  = []
 
     for raw in raw_list:
         normalised = normalize_phone(raw, country_hint)
@@ -102,3 +131,23 @@ def normalize_phones(
             result.append(normalised)
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+def _try_parse(cleaned: str, region: Optional[str]) -> Optional[str]:
+    """
+    Attempt to parse and validate a phone string with a given region hint.
+    Returns E.164 string or None.
+    """
+    try:
+        parsed = phonenumbers.parse(cleaned, region)
+        if phonenumbers.is_valid_number(parsed):
+            return phonenumbers.format_number(
+                parsed, phonenumbers.PhoneNumberFormat.E164
+            )
+        return None
+    except (NumberParseException, Exception):
+        return None

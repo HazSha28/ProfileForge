@@ -338,6 +338,44 @@
 
 </div>
 
+<!-- ── Bulk Processing Stats (shows after any bulk job) ──────── -->
+<div id="bulk-stats-section" hidden style="margin-bottom:28px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <span style="font-size:.8rem;font-weight:700;color:var(--text);letter-spacing:.3px;">Last Bulk Job Results</span>
+    <a href="/bulk/history" style="font-size:.76rem;color:var(--brown-l);">View all →</a>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;" id="bulk-stat-grid">
+    <div class="db-stat" style="padding:14px 16px;">
+      <div class="db-stat__value" id="bstat-matched" style="font-size:1.4rem">0</div>
+      <div class="db-stat__label" style="display:flex;align-items:center;gap:4px;margin-top:4px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;"></span>Matched
+      </div>
+    </div>
+    <div class="db-stat" style="padding:14px 16px;">
+      <div class="db-stat__value" id="bstat-missing" style="font-size:1.4rem;color:var(--amber)">0</div>
+      <div class="db-stat__label" style="display:flex;align-items:center;gap:4px;margin-top:4px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;"></span>Resume Missing
+      </div>
+    </div>
+    <div class="db-stat" style="padding:14px 16px;">
+      <div class="db-stat__value" id="bstat-orphan" style="font-size:1.4rem;color:#5a90c8">0</div>
+      <div class="db-stat__label" style="display:flex;align-items:center;gap:4px;margin-top:4px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#5a90c8;display:inline-block;"></span>Standalone Resumes
+      </div>
+    </div>
+    <div class="db-stat" style="padding:14px 16px;">
+      <div class="db-stat__value" id="bstat-failed" style="font-size:1.4rem;color:var(--red)">0</div>
+      <div class="db-stat__label" style="display:flex;align-items:center;gap:4px;margin-top:4px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;"></span>Failed Parsing
+      </div>
+    </div>
+    <div class="db-stat" style="padding:14px 16px;">
+      <div class="db-stat__value" id="bstat-conf" style="font-size:1.4rem">—</div>
+      <div class="db-stat__label" style="margin-top:4px;">Avg Confidence</div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Main grid ─────────────────────────────────────────────── -->
 <div class="db-grid">
 
@@ -477,7 +515,7 @@
 {% block scripts %}
 <script>
 (function() {
-  // ── Stats from localStorage ──────────────────────────────────
+  // ── Single-candidate stats from localStorage ─────────────────
   const runs = parseInt(localStorage.getItem("pf_runs") || "0");
 
   function animCount(id, target, suffix) {
@@ -502,11 +540,53 @@
     document.getElementById("trend-profiles").textContent  = "+" + runs;
   }
 
+  // ── Bulk stats from localStorage ─────────────────────────────
+  (function renderBulkStats() {
+    try {
+      const jobs = JSON.parse(localStorage.getItem("pf_bulk_history") || "[]");
+      if (!jobs.length) return;
+
+      // Show the section
+      const section = document.getElementById("bulk-stats-section");
+      if (section) section.hidden = false;
+
+      // Use the most recent job's summary
+      const latest = jobs[0];
+      const candidates = latest.candidates || [];
+      const summary    = latest.summary || {};
+
+      const matched = candidates.filter(c => c.status === "done").length;
+      const missing = candidates.filter(c => c.status === "resume_missing").length;
+      const orphan  = candidates.filter(c => c.status === "csv_missing").length;
+      const failed  = candidates.filter(c => c.status === "failed").length;
+
+      const conf = summary.average_confidence
+        ? Math.round(summary.average_confidence * 100) + "%"
+        : (function() {
+            const scores = candidates.filter(c => c.confidence > 0).map(c => c.confidence);
+            if (!scores.length) return "—";
+            return Math.round(scores.reduce((a,b)=>a+b,0)/scores.length*100) + "%";
+          })();
+
+      document.getElementById("bstat-matched").textContent = matched;
+      document.getElementById("bstat-missing").textContent = missing;
+      document.getElementById("bstat-orphan").textContent  = orphan;
+      document.getElementById("bstat-failed").textContent  = failed;
+      document.getElementById("bstat-conf").textContent    = conf;
+    } catch(e) {}
+  })();
+
   // ── Activity feed ─────────────────────────────────────────────
-  const feed = document.getElementById("activity-feed");
+  const feed     = document.getElementById("activity-feed");
   const actCount = document.getElementById("activity-count");
 
-  if (runs === 0) {
+  // Merge single + bulk history for activity feed
+  const singleHistory = (function() {
+    try { return JSON.parse(localStorage.getItem("pf_history") || "[]"); }
+    catch { return []; }
+  })();
+
+  if (singleHistory.length === 0 && runs === 0) {
     feed.innerHTML = `
       <div class="db-empty">
         <div class="db-empty__icon">📋</div>
@@ -515,16 +595,26 @@
       </div>`;
     actCount.textContent = "no activity yet";
   } else {
-    actCount.textContent = runs + " profile" + (runs !== 1 ? "s" : "");
-    const lastProfile = JSON.parse(localStorage.getItem("pf_last_profile") || "null");
-    const name = lastProfile
-      ? (lastProfile.name?.value || lastProfile.full_name?.value || "Candidate")
-      : "Candidate";
+    const total = singleHistory.length || runs;
+    actCount.textContent = total + " profile" + (total !== 1 ? "s" : "");
 
-    const items = [
-      { text: `<strong>${name}</strong> — profile generated`, time: "just now", active: true },
-      { text: `Profile exported as <strong>JSON</strong>`, time: "just now", active: false },
-    ];
+    // Build activity items from real history + last profile
+    const items = [];
+    for (const entry of singleHistory.slice(0, 3)) {
+      const tag = entry.source === "bulk" ? "Bulk" : "Single";
+      items.push({
+        text: `<strong>${esc(entry.name)}</strong> — profile generated <span style="font-size:.68rem;background:rgba(107,63,31,.1);color:var(--brown);padding:1px 6px;border-radius:8px;margin-left:4px;">${tag}</span>`,
+        time: _relTime(entry.date),
+        active: true,
+      });
+    }
+    if (!items.length) {
+      const lastProfile = JSON.parse(localStorage.getItem("pf_last_profile") || "null");
+      const name = lastProfile
+        ? (lastProfile.name?.value || lastProfile.full_name?.value || "Candidate")
+        : "Candidate";
+      items.push({ text: `<strong>${esc(name)}</strong> — profile generated`, time: "just now", active: true });
+    }
 
     feed.innerHTML = `<div class="db-activity">${items.map(i => `
       <div class="db-activity-item">
@@ -532,6 +622,20 @@
         <span class="db-activity-item__text">${i.text}</span>
         <span class="db-activity-item__time">${i.time}</span>
       </div>`).join("")}</div>`;
+  }
+
+  function esc(s) {
+    return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function _relTime(iso) {
+    try {
+      const diff = (Date.now() - new Date(iso)) / 1000;
+      if (diff < 60)   return "just now";
+      if (diff < 3600) return Math.floor(diff/60) + "m ago";
+      if (diff < 86400) return Math.floor(diff/3600) + "h ago";
+      return Math.floor(diff/86400) + "d ago";
+    } catch { return ""; }
   }
 })();
 </script>
