@@ -160,7 +160,8 @@ async def process_stream(
     async def event_stream():
         import os, json, tempfile
 
-        yield _sse("stage", {"step": "Parsing CSV", "status": "running"})
+        # Stage: Parse
+        yield _sse("progress", {"stage": "parse", "status": "running", "progress": 10})
         await asyncio.sleep(0)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -181,7 +182,7 @@ async def process_stream(
 
             try:
                 csv_record = parse_csv(csv_path)
-                yield _sse("stage", {"step": "CSV Parsed", "status": "done"})
+                yield _sse("progress", {"stage": "parse", "status": "done", "progress": 20})
             except ParseError as exc:
                 yield _sse("error", {"message": str(exc)})
                 return
@@ -195,42 +196,50 @@ async def process_stream(
                            if k not in ("linkedin", "github", "portfolio") and u],
                 )
 
-            yield _sse("stage", {"step": "Parsing Resume PDF", "status": "running"})
-            await asyncio.sleep(0)
-
             try:
                 resume_record = parse_resume(pdf_path)
-                yield _sse("stage", {"step": "Resume Parsed", "status": "done"})
+                yield _sse("progress", {"stage": "parse", "status": "done", "progress": 30})
             except ParseError as exc:
                 yield _sse("error", {"message": str(exc)})
                 return
 
-            yield _sse("stage", {"step": "Extracting Fields", "status": "done"})
-            await asyncio.sleep(0)
-            yield _sse("stage", {"step": "Normalising Data", "status": "running"})
+            # Stage: Normalize
+            yield _sse("progress", {"stage": "normalize", "status": "running", "progress": 40})
             await asyncio.sleep(0)
 
             try:
                 profile = merge([csv_record, resume_record])
-                yield _sse("stage", {"step": "Emails Normalised", "status": "done"})
-                yield _sse("stage", {"step": "Phones Converted to E.164", "status": "done"})
-                yield _sse("stage", {"step": "Skills Canonicalised", "status": "done"})
-                yield _sse("stage", {"step": "Merge Completed", "status": "done"})
-                yield _sse("stage", {"step": "Confidence Assigned", "status": "done"})
+                yield _sse("progress", {"stage": "normalize", "status": "done", "progress": 50})
             except Exception as exc:
                 yield _sse("error", {"message": f"Merge failed: {exc}"})
                 return
 
+            # Stage: Merge
+            yield _sse("progress", {"stage": "merge", "status": "done", "progress": 60})
+            await asyncio.sleep(0)
+
+            # Stage: Confidence
+            yield _sse("progress", {"stage": "confidence", "status": "done", "progress": 70})
+            await asyncio.sleep(0)
+
+            # Stage: Validate
+            yield _sse("progress", {"stage": "validate", "status": "running", "progress": 80})
+            await asyncio.sleep(0)
+
             try:
                 profile, warnings = validate(profile)
-                yield _sse("stage", {"step": "Validation Passed", "status": "done"})
+                yield _sse("progress", {"stage": "validate", "status": "done", "progress": 90})
             except Exception as exc:
                 yield _sse("error", {"message": f"Validation failed: {exc}"})
                 return
 
+            # Stage: Project
+            yield _sse("progress", {"stage": "project", "status": "running", "progress": 95})
+            await asyncio.sleep(0)
+
             try:
                 output = project(profile, cfg)
-                yield _sse("stage", {"step": "Profile Generated", "status": "done"})
+                yield _sse("progress", {"stage": "project", "status": "done", "progress": 100})
             except Exception as exc:
                 yield _sse("error", {"message": f"Projection failed: {exc}"})
                 return

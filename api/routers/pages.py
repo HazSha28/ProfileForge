@@ -11,11 +11,15 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from jinja2 import Environment, FileSystemLoader
 
 router = APIRouter(tags=["Pages"])
 
 TEMPLATES = Jinja2Templates(
-    directory=str(Path(__file__).parent.parent.parent / "web" / "templates")
+    env=Environment(
+        loader=FileSystemLoader(str(Path(__file__).parent.parent.parent / "web" / "templates")),
+        auto_reload=False
+    )
 )
 
 

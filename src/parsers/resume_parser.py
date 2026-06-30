@@ -37,6 +37,128 @@ logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# PyMuPDF — embedded hyperlink extractor
+# ---------------------------------------------------------------------------
+# WHY PyMuPDF (fitz)?
+#   pdfplumber extracts visible text. But many resumes have hyperlinks like
+#   "LinkedIn" or "GitHub" where the display text hides the actual URL.
+#   These URLs live in the PDF's annotation layer — invisible to text
+#   extraction but readable by fitz.
+#
+#   Strategy:
+#     1. Use fitz to iterate every page's link annotations.
+#     2. For each annotation that has a URI, collect it.
+#     3. Classify the URI into linkedin / github / portfolio / other.
+#     4. Merge with regex-extracted URLs (fitz wins when both found).
+# ---------------------------------------------------------------------------
+
+def _extract_embedded_links(pdf_path: str) -> LinksData:
+    """
+    Use PyMuPDF (fitz) to extract embedded hyperlink annotations from a PDF.
+
+    This catches URLs that are hidden behind display text like "LinkedIn" or
+    "GitHub Portfolio" — common in professionally formatted resumes.
+
+    Args:
+        pdf_path: Path to the PDF file.
+
+    Returns:
+        LinksData with classified URLs.
+    """
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        logger.debug("PyMuPDF not installed — skipping embedded link extraction.")
+        return LinksData()
+
+    linkedin:  Optional[str] = None
+    github:    Optional[str] = None
+    portfolio: Optional[str] = None
+    other:     list[str]     = []
+
+    _SEEN: set[str] = set()
+
+    try:
+        doc = fitz.open(pdf_path)
+        for page in doc:
+            # page.get_links() returns a list of dicts with 'uri' key for web links
+            for link in page.get_links():
+                uri = link.get("uri", "").strip()
+                if not uri or uri in _SEEN:
+                    continue
+                _SEEN.add(uri)
+
+                uri_lower = uri.lower()
+
+                if "linkedin.com" in uri_lower:
+                    if not linkedin:
+                        linkedin = uri
+                elif "github.com" in uri_lower:
+                    if not github:
+                        github = uri
+                elif any(d in uri_lower for d in [
+                    "leetcode.com", "hackerrank.com", "codeforces.com",
+                    "kaggle.com", "stackoverflow.com", "codepen.io",
+                    "behance.net", "dribbble.com", "medium.com",
+                    "codolio.com", "devpost.com",
+                ]):
+                    other.append(uri)
+                elif uri_lower.startswith(("http://", "https://")):
+                    # Treat as portfolio if no portfolio yet, else other
+                    if not portfolio and _looks_like_portfolio(uri):
+                        portfolio = uri
+                    else:
+                        other.append(uri)
+
+        doc.close()
+        logger.info(
+            "Embedded links extracted — linkedin=%s, github=%s, portfolio=%s, other=%d",
+            bool(linkedin), bool(github), bool(portfolio), len(other),
+        )
+
+    except Exception as exc:
+        logger.warning("PyMuPDF link extraction failed: %s", exc)
+
+    return LinksData(
+        linkedin=linkedin,
+        github=github,
+        portfolio=portfolio,
+        other=list(dict.fromkeys(other)),  # deduplicate, preserve order
+    )
+
+
+def _looks_like_portfolio(uri: str) -> bool:
+    """Heuristic: a portfolio URL is personal (not a known platform)."""
+    _NOT_PORTFOLIO = {
+        "google.com", "youtube.com", "twitter.com", "x.com",
+        "facebook.com", "instagram.com", "reddit.com",
+        "microsoft.com", "apple.com", "amazon.com",
+    }
+    from urllib.parse import urlparse
+    try:
+        host = urlparse(uri).netloc.lower().replace("www.", "")
+        return host not in _NOT_PORTFOLIO
+    except Exception:
+        return False
+
+
+def _merge_links(regex_links: LinksData, fitz_links: LinksData) -> LinksData:
+    """
+    Merge regex-extracted links with PyMuPDF-extracted links.
+    fitz wins when both have a value (annotation URLs are more reliable).
+    """
+    other = list(dict.fromkeys(
+        (fitz_links.other or []) + (regex_links.other or [])
+    ))
+    return LinksData(
+        linkedin  = fitz_links.linkedin  or regex_links.linkedin,
+        github    = fitz_links.github    or regex_links.github,
+        portfolio = fitz_links.portfolio or regex_links.portfolio,
+        other     = other,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Compiled regular expressions
 # ---------------------------------------------------------------------------
 # WHY compile upfront:
@@ -140,6 +262,12 @@ def parse(pdf_path: str) -> CandidateRecord:
     except Exception as exc:
         raise ParseError(f"Failed to open PDF {pdf_path}: {exc}") from exc
 
+    # --- Extract embedded hyperlinks via PyMuPDF (fitz) ---
+    # This runs regardless of whether AI or regex is used for text fields,
+    # because link annotations are separate from text content.
+    fitz_links = _extract_embedded_links(pdf_path)
+    logger.debug("PyMuPDF links: %s", fitz_links)
+
     # --- Try AI extraction first, fall back to regex ---
     from src.parsers import ai_resume_parser
 
@@ -147,10 +275,12 @@ def parse(pdf_path: str) -> CandidateRecord:
         ai_record = ai_resume_parser.extract(full_text)
         if ai_record:
             logger.info("Using AI-extracted resume record.")
+            # Merge AI-extracted links with fitz-extracted links
+            ai_record.links = _merge_links(ai_record.links, fitz_links)
             return ai_record
-        logger.warning("AI extraction failed or returned nothing — falling back to regex parser.")
+        logger.warning("AI extraction failed — falling back to regex parser.")
 
-    # --- Regex fallback: extract each field from the raw text ---
+    # --- Regex fallback ---
     logger.info("Using regex-based resume extraction.")
     emails = _extract_emails(full_text)
     phones = _extract_phones(full_text)
@@ -163,17 +293,17 @@ def parse(pdf_path: str) -> CandidateRecord:
     headline = _extract_headline(full_text)
     location = _extract_location(full_text)
 
+    # Merge regex links with fitz links
+    regex_links = LinksData(linkedin=linkedin, github=github, portfolio=portfolio)
+    merged_links = _merge_links(regex_links, fitz_links)
+
     record = CandidateRecord(
         source="Resume",
         full_name=full_name,
         emails=emails,
         phones=phones,
         location=location,
-        links=LinksData(
-            linkedin=linkedin,
-            github=github,
-            portfolio=portfolio,
-        ),
+        links=merged_links,
         headline=headline,
         years_experience=years_exp,
         skills=skills,

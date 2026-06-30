@@ -1,15 +1,22 @@
 """
-app.py — ProfileForge Web Server
----------------------------------
-Flask web application that exposes the ProfileForge pipeline as a web API.
+app.py — ProfileForge Flask Server
+------------------------------------
+Flask web application — dashboard-first layout.
 
 Routes:
-  GET  /              → Serve the frontend HTML page
-  POST /api/process   → Accept CSV + PDF uploads, run pipeline, return JSON
-  GET  /api/health    → Health check endpoint
-  GET  /auth/google   → Start Google OAuth flow
-  GET  /auth/github   → Start GitHub OAuth flow
-  GET  /logout        → Clear session and redirect to login
+  GET  /                   → redirect to /dashboard
+  GET  /dashboard          → Dashboard (landing page)
+  GET  /candidate          → Single candidate upload page
+  GET  /profile            → Profile result page
+  POST /api/process        → Pipeline API (JSON response)
+  POST /api/process/stream → Server-Sent Events pipeline stream
+  GET  /api/health         → Health check
+  GET  /login  /signup     → Auth page
+  GET  /help               → Help & docs
+  GET  /terms  /privacy    → Legal pages
+  GET  /auth/google        → Google OAuth
+  GET  /auth/github        → GitHub OAuth
+  GET  /logout             → Clear session
 """
 
 from __future__ import annotations
@@ -20,177 +27,288 @@ import tempfile
 import traceback
 from pathlib import Path
 
-# Load .env file before anything else
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, jsonify, render_template, request, send_from_directory, session
+from flask import (
+    Flask, Response, jsonify, redirect, render_template,
+    request, session, stream_with_context, url_for,
+)
 
 from src.merger.merge import merge
+from src.models.schema import LinksData
 from src.parsers.csv_parser import ParseError, parse as parse_csv
 from src.parsers.resume_parser import parse as parse_resume
-from src.projection.projector import load_config, project
+from src.projection.projector import project
 from src.utils.helpers import get_logger
 from src.validator.validator import validate
-from auth_oauth import oauth_bp, init_oauth
+from auth_oauth import init_oauth, oauth_bp
 
 logger = get_logger("profileforge.web")
 
+# ---------------------------------------------------------------------------
+# App setup
+# ---------------------------------------------------------------------------
 app = Flask(__name__, static_folder="web/static", template_folder="web/templates")
-
-# Secret key for session encryption
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-in-production")
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB max upload
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024   # 16 MB
 
-# Register OAuth blueprint and providers
 app.register_blueprint(oauth_bp)
 init_oauth(app)
 
 
 # ---------------------------------------------------------------------------
-# Routes
+# Helper
+# ---------------------------------------------------------------------------
+def _user():
+    return session.get("user")
+
+
+# ---------------------------------------------------------------------------
+# Page routes
 # ---------------------------------------------------------------------------
 
 @app.route("/")
-def index():
-    """Serve the main web UI."""
-    user = session.get("user")
-    return render_template("index.html", user=user)
+def root():
+    return redirect("/dashboard")
+
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html", user=_user(), active_page="dashboard")
+
+
+@app.route("/candidate")
+def candidate():
+    return render_template("candidate.html", user=_user(), active_page="candidate")
+
+
+@app.route("/profile")
+def profile_page():
+    return render_template("profile.html", user=_user(), active_page="candidate")
 
 
 @app.route("/login")
 def login():
-    """Serve the auth page."""
     return render_template("auth.html")
 
 
 @app.route("/signup")
 def signup():
-    """Serve the auth page with sign-up tab active."""
     return render_template("auth.html")
 
 
 @app.route("/help")
 def help_page():
-    """Serve the help & documentation page."""
-    return render_template("help.html")
+    return render_template("help.html", user=_user(), active_page="help")
 
 
 @app.route("/terms")
 def terms():
-    """Serve the Terms and Conditions page."""
     return render_template("terms.html")
 
 
 @app.route("/privacy")
 def privacy():
-    """Serve the Privacy Policy page."""
     return render_template("privacy.html")
 
 
+@app.route("/history")
+def history():
+    return render_template("history.html", user=_user(), active_page="history")
+
+
+@app.route("/processing")
+def processing():
+    # Legacy redirect — pipeline now runs inline on /candidate
+    return redirect("/candidate")
+
+
+# ---------------------------------------------------------------------------
+# API — health
+# ---------------------------------------------------------------------------
+
 @app.route("/api/health")
 def health():
-    """Simple health check."""
-    return jsonify({"status": "ok", "service": "ProfileForge"})
+    return jsonify({"status": "ok", "service": "ProfileForge", "version": "2.0.0"})
 
+
+# ---------------------------------------------------------------------------
+# API — pipeline (JSON response)
+# ---------------------------------------------------------------------------
 
 @app.route("/api/process", methods=["POST"])
 def process():
-    """
-    Accept a CSV file and a PDF resume, run the full pipeline, return JSON.
-
-    Expected form fields:
-      csv    — the recruiter CSV file
-      resume — the resume PDF file
-      config — optional JSON config text (inline, not a file)
-    """
-    # --- Validate uploads ---
     if "csv" not in request.files or "resume" not in request.files:
         return jsonify({"error": "Both 'csv' and 'resume' files are required."}), 400
 
-    csv_file = request.files["csv"]
-    resume_file = request.files["resume"]
+    csv_file  = request.files["csv"]
+    pdf_file  = request.files["resume"]
 
-    if csv_file.filename == "" or resume_file.filename == "":
-        return jsonify({"error": "No file selected for one or both inputs."}), 400
+    if not csv_file.filename or not pdf_file.filename:
+        return jsonify({"error": "No file selected."}), 400
 
-    # --- Write uploads to a temporary directory ---
-    # We use tempfile so we never pollute the project folder with user uploads.
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        csv_path = os.path.join(tmp_dir, "recruiter.csv")
-        pdf_path = os.path.join(tmp_dir, "resume.pdf")
-
+    with tempfile.TemporaryDirectory() as tmp:
+        csv_path = os.path.join(tmp, "recruiter.csv")
+        pdf_path = os.path.join(tmp, "resume.pdf")
         csv_file.save(csv_path)
-        resume_file.save(pdf_path)
+        pdf_file.save(pdf_path)
 
-        # --- Optional config ---
-        config_text = request.form.get("config", "")
-        config: dict = {}
-        if config_text.strip():
-            try:
-                config = json.loads(config_text)
-            except json.JSONDecodeError as exc:
-                return jsonify({"error": f"Invalid config JSON: {exc}"}), 400
+        cfg = _parse_json_field("config")
+        links_dict = _parse_json_field("platform_links")
 
-        # --- Optional platform links from recruiter ---
-        platform_links_text = request.form.get("platform_links", "")
-        platform_links: dict = {}
-        if platform_links_text.strip():
-            try:
-                platform_links = json.loads(platform_links_text)
-            except json.JSONDecodeError:
-                pass  # ignore malformed links silently
-
-        # --- Run the pipeline ---
         try:
             csv_record = parse_csv(csv_path)
-        except ParseError as exc:
-            logger.error("CSV parse failed: %s", exc)
-            return jsonify({"error": f"CSV parsing failed: {exc}"}), 422
+        except ParseError as e:
+            return jsonify({"error": f"CSV parsing failed: {e}"}), 422
 
-        # Inject any recruiter-supplied platform links into the CSV record
-        if platform_links:
-            from src.models.schema import LinksData
-            csv_record.links = LinksData(
-                linkedin   = platform_links.get("linkedin")   or csv_record.links.linkedin,
-                github     = platform_links.get("github")     or csv_record.links.github,
-                portfolio  = platform_links.get("portfolio")  or csv_record.links.portfolio,
-                other=[u for k, u in platform_links.items()
-                       if k not in ("linkedin", "github", "portfolio") and u],
-            )
-            logger.info("Injected %d platform link(s) from recruiter form", len(platform_links))
+        _inject_links(csv_record, links_dict)
 
         try:
             resume_record = parse_resume(pdf_path)
-        except ParseError as exc:
-            logger.error("Resume parse failed: %s", exc)
-            return jsonify({"error": f"Resume parsing failed: {exc}"}), 422
+        except ParseError as e:
+            return jsonify({"error": f"Resume parsing failed: {e}"}), 422
 
         try:
             profile = merge([csv_record, resume_record])
-        except Exception as exc:
-            logger.error("Merge failed: %s", traceback.format_exc())
-            return jsonify({"error": f"Merge failed: {exc}"}), 500
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            return jsonify({"error": f"Merge failed: {e}"}), 500
 
+        profile, warnings = validate(profile)
+        output = project(profile, cfg)
+
+        return jsonify({"success": True, "profile": output, "warnings": warnings})
+
+
+# ---------------------------------------------------------------------------
+# API — pipeline SSE stream
+# ---------------------------------------------------------------------------
+
+@app.route("/api/process/stream", methods=["POST"])
+def process_stream():
+    """
+    Server-Sent Events endpoint.
+    Streams each pipeline stage to the browser so the UI can show
+    a live progress screen.
+
+    SSE format:
+      event: stage
+      data: {"step": "CSV Parsed", "status": "done"}
+
+      event: complete
+      data: {"profile": {...}, "warnings": [...]}
+
+      event: error
+      data: {"message": "..."}
+    """
+    # Read files BEFORE entering the generator
+    # (Flask request context doesn't survive into the generator)
+    csv_bytes  = request.files["csv"].read()  if "csv"    in request.files else b""
+    pdf_bytes  = request.files["resume"].read() if "resume" in request.files else b""
+    cfg        = _parse_json_field("config")
+    links_dict = _parse_json_field("platform_links")
+
+    def generate():
+        import time
+
+        def sse(event, data):
+            return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path = os.path.join(tmp, "recruiter.csv")
+            pdf_path = os.path.join(tmp, "resume.pdf")
+
+            with open(csv_path, "wb") as f: f.write(csv_bytes)
+            with open(pdf_path, "wb") as f: f.write(pdf_bytes)
+
+            # Stage 1 — CSV
+            yield sse("stage", {"step": "Parsing CSV", "status": "running"})
+            try:
+                csv_record = parse_csv(csv_path)
+                _inject_links(csv_record, links_dict)
+                yield sse("stage", {"step": "CSV Parsed", "status": "done"})
+            except ParseError as e:
+                yield sse("error", {"message": str(e)})
+                return
+
+            # Stage 2 — PDF
+            yield sse("stage", {"step": "Parsing Resume PDF", "status": "running"})
+            try:
+                resume_record = parse_resume(pdf_path)
+                yield sse("stage", {"step": "Resume Parsed", "status": "done"})
+            except ParseError as e:
+                yield sse("error", {"message": str(e)})
+                return
+
+            # Stage 3 — Normalise (happens inside merge)
+            yield sse("stage", {"step": "Extracting Fields", "status": "done"})
+            yield sse("stage", {"step": "Normalising Data", "status": "running"})
+
+            # Stage 4 — Merge
+            try:
+                profile = merge([csv_record, resume_record])
+                yield sse("stage", {"step": "Emails Normalised",         "status": "done"})
+                yield sse("stage", {"step": "Phones Converted to E.164", "status": "done"})
+                yield sse("stage", {"step": "Skills Canonicalised",      "status": "done"})
+                yield sse("stage", {"step": "Merge Completed",           "status": "done"})
+                yield sse("stage", {"step": "Confidence Assigned",       "status": "done"})
+            except Exception as e:
+                yield sse("error", {"message": f"Merge failed: {e}"})
+                return
+
+            # Stage 5 — Validate
+            try:
+                profile, warnings = validate(profile)
+                yield sse("stage", {"step": "Validation Passed", "status": "done"})
+            except Exception as e:
+                yield sse("error", {"message": f"Validation failed: {e}"})
+                return
+
+            # Stage 6 — Project
+            try:
+                output = project(profile, cfg)
+                yield sse("stage", {"step": "Profile Generated", "status": "done"})
+            except Exception as e:
+                yield sse("error", {"message": f"Projection failed: {e}"})
+                return
+
+            yield sse("complete", {"profile": output, "warnings": warnings})
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _parse_json_field(field_name: str) -> dict:
+    raw = request.form.get(field_name, "")
+    if raw.strip():
         try:
-            profile, warnings = validate(profile)
-        except Exception as exc:
-            logger.error("Validation failed: %s", exc)
-            return jsonify({"error": f"Validation failed: {exc}"}), 500
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            pass
+    return {}
 
-        try:
-            output = project(profile, config)
-        except Exception as exc:
-            logger.error("Projection failed: %s", exc)
-            return jsonify({"error": f"Projection failed: {exc}"}), 500
 
-        logger.info("Pipeline completed for candidate: %s", output.get("name") or output.get("full_name", {}).get("value"))
-
-        return jsonify({
-            "success": True,
-            "profile": output,
-            "warnings": warnings,
-        })
+def _inject_links(csv_record, links_dict: dict):
+    if not links_dict:
+        return
+    csv_record.links = LinksData(
+        linkedin  = links_dict.get("linkedin")  or csv_record.links.linkedin,
+        github    = links_dict.get("github")    or csv_record.links.github,
+        portfolio = links_dict.get("portfolio") or csv_record.links.portfolio,
+        other=[v for k, v in links_dict.items()
+               if k not in ("linkedin", "github", "portfolio") and v],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -198,6 +316,6 @@ def process():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    print("\n  ProfileForge Web UI")
+    print("\n  ProfileForge — Flask Server")
     print("  Open: http://127.0.0.1:5000\n")
     app.run(debug=True, port=5000)

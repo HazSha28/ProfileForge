@@ -3,9 +3,12 @@ api/routes/pages.py
 --------------------
 All HTML page routes using Jinja2 templates.
 
-FastAPI serves HTML via Jinja2TemplateResponse.
-The base.html template provides the full sidebar layout.
-Every page extends base.html and fills in the content block.
+Starlette >= 0.36 changed TemplateResponse signature:
+  OLD: TemplateResponse("name.html", {"request": request, ...})
+  NEW: TemplateResponse(request, "name.html", {...})
+
+We use the new signature throughout to avoid the
+'unhashable type: dict' cache bug in Jinja2.
 """
 
 from __future__ import annotations
@@ -23,103 +26,71 @@ TEMPLATES_DIR = Path(__file__).parent.parent.parent / "web" / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
-def _user(request: Request) -> dict | None:
-    """Extract user from session."""
-    return request.session.get("user")
+def _ctx(request: Request, active_page: str = "", **extra) -> dict:
+    """Build the standard template context dict."""
+    return {
+        "request":     request,
+        "user":        request.session.get("user"),
+        "active_page": active_page,
+        **extra,
+    }
 
 
-# ---------------------------------------------------------------------------
-# Root — redirect to dashboard
-# ---------------------------------------------------------------------------
-
+# ── Root ──────────────────────────────────────────────────────
 @router.get("/")
 async def root():
     return RedirectResponse(url="/dashboard")
 
 
-# ---------------------------------------------------------------------------
-# Dashboard — first page
-# ---------------------------------------------------------------------------
-
+# ── Dashboard ─────────────────────────────────────────────────
 @router.get("/dashboard")
 async def dashboard(request: Request):
     return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request":     request,
-            "user":        _user(request),
-            "active_page": "dashboard",
-        },
+        request, "dashboard.html", _ctx(request, "dashboard")
     )
 
 
-# ---------------------------------------------------------------------------
-# Single Candidate page
-# ---------------------------------------------------------------------------
-
+# ── Single Candidate ──────────────────────────────────────────
 @router.get("/candidate")
 async def candidate(request: Request):
     return templates.TemplateResponse(
-        "candidate.html",
-        {
-            "request":     request,
-            "user":        _user(request),
-            "active_page": "candidate",
-        },
+        request, "candidate.html", _ctx(request, "candidate")
     )
 
 
-# ---------------------------------------------------------------------------
-# Profile result page
-# ---------------------------------------------------------------------------
-
+# ── Profile result ────────────────────────────────────────────
 @router.get("/profile")
 async def profile_page(request: Request):
     return templates.TemplateResponse(
-        "profile.html",
-        {
-            "request":     request,
-            "user":        _user(request),
-            "active_page": "candidate",
-        },
+        request, "profile.html", _ctx(request, "candidate")
     )
 
 
-# ---------------------------------------------------------------------------
-# Auth pages
-# ---------------------------------------------------------------------------
-
+# ── Auth ──────────────────────────────────────────────────────
 @router.get("/login")
 async def login(request: Request):
-    return templates.TemplateResponse("auth.html", {"request": request})
+    return templates.TemplateResponse(request, "auth.html", {"request": request})
 
 
 @router.get("/signup")
 async def signup(request: Request):
-    return templates.TemplateResponse("auth.html", {"request": request})
+    return templates.TemplateResponse(request, "auth.html", {"request": request})
 
 
-# ---------------------------------------------------------------------------
-# Info pages
-# ---------------------------------------------------------------------------
-
+# ── Help ──────────────────────────────────────────────────────
 @router.get("/help")
 async def help_page(request: Request):
     return templates.TemplateResponse(
-        "help.html",
-        {
-            "request":     request,
-            "user":        _user(request),
-            "active_page": "help",
-        },
+        request, "help.html", _ctx(request, "help")
     )
 
 
+# ── Legal ─────────────────────────────────────────────────────
 @router.get("/terms")
 async def terms(request: Request):
-    return templates.TemplateResponse("terms.html", {"request": request})
+    return templates.TemplateResponse(request, "terms.html", {"request": request})
 
 
 @router.get("/privacy")
 async def privacy(request: Request):
-    return templates.TemplateResponse("privacy.html", {"request": request})
+    return templates.TemplateResponse(request, "privacy.html", {"request": request})

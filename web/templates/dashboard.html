@@ -1,6 +1,241 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard — ProfileForge{% endblock %}
+
+{% block head %}
+<style>
+/* ── Dashboard-specific animations & polish ── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(18px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes countUp { from { opacity:0; } to { opacity:1; } }
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+@keyframes pulseRing {
+  0%   { transform:scale(1);   opacity:.6; }
+  100% { transform:scale(1.6); opacity:0;  }
+}
+
+.dash-fade { animation: fadeUp .5s ease both; }
+.dash-fade:nth-child(1) { animation-delay:.05s }
+.dash-fade:nth-child(2) { animation-delay:.12s }
+.dash-fade:nth-child(3) { animation-delay:.19s }
+.dash-fade:nth-child(4) { animation-delay:.26s }
+
+/* ── Hero ── */
+.db-hero {
+  position:relative; overflow:hidden;
+  background:linear-gradient(135deg, #0d1b2a 0%, #162032 50%, #1a2d40 100%);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:20px; padding:36px 40px;
+  margin-bottom:28px; display:flex;
+  align-items:center; justify-content:space-between;
+  gap:24px; flex-wrap:wrap;
+  animation: fadeUp .4s ease both;
+}
+.db-hero__orb {
+  position:absolute; border-radius:50%;
+  pointer-events:none;
+}
+.db-hero__orb--1 {
+  width:320px; height:320px;
+  background:radial-gradient(circle, rgba(139,94,60,.22) 0%, transparent 65%);
+  top:-80px; right:-60px;
+  animation: orb1 10s ease-in-out infinite alternate;
+}
+.db-hero__orb--2 {
+  width:200px; height:200px;
+  background:radial-gradient(circle, rgba(42,72,112,.3) 0%, transparent 65%);
+  bottom:-40px; left:100px;
+  animation: orb1 14s ease-in-out infinite alternate-reverse;
+}
+@keyframes orb1 {
+  from { transform:translate(0,0) scale(1); }
+  to   { transform:translate(20px,14px) scale(1.12); }
+}
+.db-hero__content { position:relative; z-index:1; }
+.db-hero__greeting {
+  font-size:.75rem; font-weight:700; letter-spacing:.8px;
+  text-transform:uppercase; color:rgba(196,154,114,.8);
+  margin-bottom:8px;
+}
+.db-hero__title {
+  font-size:1.7rem; font-weight:800; color:#f0eeeb;
+  letter-spacing:-.5px; line-height:1.15; margin-bottom:10px;
+}
+.db-hero__sub { font-size:.9rem; color:#7a8fa8; line-height:1.6; max-width:400px; }
+.db-hero__actions { position:relative; z-index:1; display:flex; gap:10px; flex-wrap:wrap; }
+.db-hero__cta {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(139,94,60,.9); color:#f2e8d9;
+  padding:11px 22px; border-radius:10px; font-size:.875rem;
+  font-weight:700; text-decoration:none; border:1px solid rgba(196,154,114,.3);
+  transition:background .2s, box-shadow .2s, transform .15s;
+  box-shadow:0 4px 16px rgba(139,94,60,.35);
+}
+.db-hero__cta:hover {
+  background:rgba(139,94,60,1); transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(139,94,60,.45);
+}
+.db-hero__cta-ghost {
+  display:inline-flex; align-items:center; gap:8px;
+  color:#8fa3b8; padding:11px 22px; border-radius:10px;
+  font-size:.875rem; font-weight:600; text-decoration:none;
+  border:1px solid rgba(255,255,255,.1);
+  transition:background .2s, color .2s;
+}
+.db-hero__cta-ghost:hover { background:rgba(255,255,255,.06); color:#c4b09a; }
+
+/* ── Stat cards ── */
+.db-stats {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:14px; margin-bottom:28px;
+}
+.db-stat {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; padding:20px;
+  transition:border-color .25s, box-shadow .25s, transform .2s;
+  cursor:default; position:relative; overflow:hidden;
+}
+.db-stat::before {
+  content:''; position:absolute; inset:0; opacity:0;
+  transition:opacity .25s;
+  background:linear-gradient(135deg, rgba(107,63,31,.04) 0%, transparent 60%);
+}
+.db-stat:hover { border-color:var(--border-2); box-shadow:0 6px 24px rgba(107,63,31,.10); transform:translateY(-2px); }
+.db-stat:hover::before { opacity:1; }
+.db-stat__top { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.db-stat__icon {
+  width:38px; height:38px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+}
+.db-stat__icon--blue   { background:rgba(42,72,112,.12);  color:#2a5090; }
+.db-stat__icon--green  { background:rgba(58,125,82,.12);  color:#3a7d52; }
+.db-stat__icon--amber  { background:rgba(176,125,32,.12); color:#b07d20; }
+.db-stat__icon--brown  { background:rgba(107,63,31,.12);  color:#6b3f1f; }
+.db-stat__trend {
+  font-size:.7rem; font-weight:700; padding:3px 8px; border-radius:20px;
+}
+.db-stat__trend--up   { background:rgba(58,125,82,.1); color:#3a7d52; }
+.db-stat__trend--new  { background:rgba(107,63,31,.1); color:#6b3f1f; }
+.db-stat__value { font-size:1.75rem; font-weight:800; color:var(--text); letter-spacing:-.5px; line-height:1; }
+.db-stat__label { font-size:.75rem; color:var(--dim); margin-top:5px; font-weight:500; }
+
+/* ── Main grid ── */
+.db-grid {
+  display:grid; grid-template-columns:1.4fr 1fr;
+  gap:18px; margin-bottom:18px;
+}
+
+/* ── Panel ── */
+.db-panel {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; overflow:hidden;
+  transition:border-color .2s, box-shadow .2s;
+}
+.db-panel:hover { border-color:var(--border-2); }
+.db-panel__header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--border);
+}
+.db-panel__title { font-size:.875rem; font-weight:700; color:var(--text); }
+.db-panel__subtitle { font-size:.75rem; color:var(--dim); }
+.db-panel__body { padding:20px; }
+
+/* ── Action cards ── */
+.db-actions { display:flex; flex-direction:column; gap:10px; }
+.db-action {
+  display:flex; align-items:center; gap:14px;
+  padding:14px 16px; border-radius:12px;
+  border:1px solid var(--border); background:var(--bg);
+  text-decoration:none; position:relative; overflow:hidden;
+  transition:border-color .2s, background .2s, transform .15s, box-shadow .2s;
+}
+.db-action::after {
+  content:''; position:absolute; right:-40px; top:50%;
+  transform:translateY(-50%);
+  width:80px; height:80px; border-radius:50%;
+  background:rgba(107,63,31,.07);
+  transition:right .3s ease, width .3s, height .3s;
+}
+.db-action:hover { border-color:var(--brown-l); background:rgba(107,63,31,.04);
+  transform:translateX(3px); box-shadow:0 4px 16px rgba(107,63,31,.10); }
+.db-action:hover::after { right:-20px; width:100px; height:100px; }
+.db-action--disabled { opacity:.45; pointer-events:none; }
+.db-action__icon {
+  width:42px; height:42px; border-radius:11px; flex-shrink:0;
+  background:rgba(107,63,31,.10); border:1px solid rgba(107,63,31,.16);
+  display:flex; align-items:center; justify-content:center; color:var(--brown);
+  transition:background .2s;
+}
+.db-action:hover .db-action__icon { background:rgba(107,63,31,.18); }
+.db-action__body { flex:1; }
+.db-action__title { display:block; font-size:.875rem; font-weight:700; color:var(--text); margin-bottom:2px; }
+.db-action__desc  { display:block; font-size:.75rem; color:var(--dim); }
+.db-action__arrow { color:var(--border-2); transition:color .2s, transform .2s; }
+.db-action:hover .db-action__arrow { color:var(--brown-l); transform:translateX(3px); }
+
+/* ── Pipeline steps ── */
+.db-pipeline { display:flex; flex-direction:column; gap:0; }
+.db-step {
+  display:flex; gap:14px; padding-bottom:14px;
+  position:relative; align-items:flex-start;
+}
+.db-step:not(:last-child)::before {
+  content:''; position:absolute;
+  left:11px; top:24px;
+  width:2px; height:calc(100% - 8px);
+  background:linear-gradient(to bottom, var(--green), var(--border));
+}
+.db-step__dot {
+  width:24px; height:24px; border-radius:50%; flex-shrink:0;
+  background:rgba(58,125,82,.15); border:2px solid var(--green);
+  display:flex; align-items:center; justify-content:center; margin-top:1px;
+  position:relative;
+}
+.db-step__dot::after {
+  content:''; width:8px; height:5px;
+  border-left:2px solid var(--green); border-bottom:2px solid var(--green);
+  transform:rotate(-45deg) translateY(-1px);
+}
+.db-step__num { font-size:.62rem; font-weight:800; color:var(--green); }
+.db-step__body strong { display:block; font-size:.83rem; color:var(--text); font-weight:700; margin-bottom:2px; }
+.db-step__body span { font-size:.75rem; color:var(--dim); line-height:1.5; }
+
+/* ── Activity feed ── */
+.db-activity { display:flex; flex-direction:column; gap:0; }
+.db-activity-item {
+  display:flex; align-items:center; gap:12px; padding:12px 0;
+  border-bottom:1px solid var(--border);
+}
+.db-activity-item:last-child { border-bottom:none; padding-bottom:0; }
+.db-activity-item__dot {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+  background:var(--border-2);
+}
+.db-activity-item__dot--active { background:var(--green); box-shadow:0 0 0 3px rgba(58,125,82,.15); }
+.db-activity-item__text { flex:1; font-size:.82rem; color:var(--muted); }
+.db-activity-item__text strong { color:var(--text); }
+.db-activity-item__time { font-size:.72rem; color:var(--dim); white-space:nowrap; }
+
+/* ── Empty state ── */
+.db-empty {
+  text-align:center; padding:32px 16px;
+}
+.db-empty__icon { font-size:2.5rem; margin-bottom:12px; opacity:.4; }
+.db-empty__text { font-size:.85rem; color:var(--dim); margin-bottom:16px; }
+
+/* ── Responsive ── */
+@media (max-width:900px) {
+  .db-stats { grid-template-columns:repeat(2,1fr); }
+  .db-grid  { grid-template-columns:1fr; }
+  .db-hero  { padding:24px 22px; }
+  .db-hero__title { font-size:1.3rem; }
+}
+</style>
+{% endblock %}
 
 {% block breadcrumb %}
 <span class="pf-breadcrumb__item">Dashboard</span>
@@ -8,7 +243,7 @@
 
 {% block topbar_actions %}
 <a href="/candidate" class="pf-btn pf-btn--primary pf-btn--sm">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13">
     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
   </svg>
   New Profile
@@ -17,240 +252,286 @@
 
 {% block content %}
 
-<!-- ── Welcome banner ───────────────────────────────────────── -->
-<div class="pf-welcome">
-  <div class="pf-welcome__text">
-    <h1 class="pf-welcome__heading">
-      {% if user %}Welcome back, {{ user.name.split()[0] }}{% else %}Welcome to ProfileForge{% endif %}
+<!-- ── Hero ─────────────────────────────────────────────────── -->
+<div class="db-hero">
+  <div class="db-hero__orb db-hero__orb--1"></div>
+  <div class="db-hero__orb db-hero__orb--2"></div>
+
+  <div class="db-hero__content">
+    <p class="db-hero__greeting">
+      {% if user %}{{ user.name }}{% else %}Recruiter Dashboard{% endif %}
+    </p>
+    <h1 class="db-hero__title">
+      {% if user %}Welcome back 👋{% else %}Welcome to ProfileForge{% endif %}
     </h1>
-    <p class="pf-welcome__sub">
-      Transform scattered candidate data into one trusted profile.
+    <p class="db-hero__sub">
+      Transform scattered candidate data from multiple sources into one trusted, scored, and validated profile.
     </p>
   </div>
-  <div class="pf-welcome__actions">
-    <a href="/candidate" class="pf-btn pf-btn--primary">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+
+  <div class="db-hero__actions">
+    <a href="/candidate" class="db-hero__cta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
       Upload Candidate
     </a>
-    <a href="/help" class="pf-btn pf-btn--outline">Documentation</a>
+    <a href="/help" class="db-hero__cta-ghost">Documentation →</a>
   </div>
 </div>
 
-<!-- ── Stats row ────────────────────────────────────────────── -->
-<div class="pf-stats">
+<!-- ── Stats ─────────────────────────────────────────────────── -->
+<div class="db-stats">
 
-  <div class="pf-stat-card">
-    <div class="pf-stat-card__icon pf-stat-card__icon--blue">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-        <circle cx="12" cy="7" r="4"/>
-      </svg>
+  <div class="db-stat dash-fade">
+    <div class="db-stat__top">
+      <div class="db-stat__icon db-stat__icon--blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <span class="db-stat__trend db-stat__trend--up" id="trend-profiles">+0</span>
     </div>
-    <div class="pf-stat-card__body">
-      <span class="pf-stat-card__value" id="stat-profiles">—</span>
-      <span class="pf-stat-card__label">Profiles Generated</span>
-    </div>
+    <div class="db-stat__value" id="stat-profiles">0</div>
+    <div class="db-stat__label">Profiles Generated</div>
   </div>
 
-  <div class="pf-stat-card">
-    <div class="pf-stat-card__icon pf-stat-card__icon--green">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
+  <div class="db-stat dash-fade">
+    <div class="db-stat__top">
+      <div class="db-stat__icon db-stat__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <span class="db-stat__trend db-stat__trend--up" id="trend-validated">✓</span>
     </div>
-    <div class="pf-stat-card__body">
-      <span class="pf-stat-card__value" id="stat-validated">—</span>
-      <span class="pf-stat-card__label">Validated Profiles</span>
-    </div>
+    <div class="db-stat__value" id="stat-validated">0</div>
+    <div class="db-stat__label">Validated</div>
   </div>
 
-  <div class="pf-stat-card">
-    <div class="pf-stat-card__icon pf-stat-card__icon--amber">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
-        <circle cx="12" cy="12" r="10"/>
-        <polyline points="12 6 12 12 16 14"/>
-      </svg>
+  <div class="db-stat dash-fade">
+    <div class="db-stat__top">
+      <div class="db-stat__icon db-stat__icon--amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <span class="db-stat__trend db-stat__trend--new">avg</span>
     </div>
-    <div class="pf-stat-card__body">
-      <span class="pf-stat-card__value" id="stat-avg-conf">—</span>
-      <span class="pf-stat-card__label">Avg. Confidence</span>
-    </div>
+    <div class="db-stat__value" id="stat-avg-conf">—</div>
+    <div class="db-stat__label">Avg. Confidence</div>
   </div>
 
-  <div class="pf-stat-card">
-    <div class="pf-stat-card__icon pf-stat-card__icon--purple">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
+  <div class="db-stat dash-fade">
+    <div class="db-stat__top">
+      <div class="db-stat__icon db-stat__icon--brown">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <span class="db-stat__trend db-stat__trend--new">JSON</span>
     </div>
-    <div class="pf-stat-card__body">
-      <span class="pf-stat-card__value" id="stat-exports">—</span>
-      <span class="pf-stat-card__label">Exports</span>
-    </div>
+    <div class="db-stat__value" id="stat-exports">0</div>
+    <div class="db-stat__label">Exports</div>
   </div>
 
 </div>
 
-<!-- ── Main grid ────────────────────────────────────────────── -->
-<div class="pf-dashboard-grid">
+<!-- ── Main grid ─────────────────────────────────────────────── -->
+<div class="db-grid">
 
-  <!-- Quick Actions -->
-  <div class="pf-panel">
-    <div class="pf-panel__header">
-      <h3 class="pf-panel__title">Quick Actions</h3>
+  <!-- Left: Quick actions + recent activity -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+
+    <!-- Quick actions -->
+    <div class="db-panel">
+      <div class="db-panel__header">
+        <span class="db-panel__title">Quick Actions</span>
+        <span class="db-panel__subtitle">Start here</span>
+      </div>
+      <div class="db-panel__body">
+        <div class="db-actions">
+
+          <a href="/candidate" class="db-action">
+            <div class="db-action__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div class="db-action__body">
+              <strong class="db-action__title">Single Candidate</strong>
+              <span class="db-action__desc">Upload CSV + PDF → get one canonical profile</span>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" class="db-action__arrow">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </a>
+
+          <div class="db-action db-action--disabled">
+            <div class="db-action__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div class="db-action__body">
+              <strong class="db-action__title">Bulk Upload
+                <span style="font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(107,63,31,.12);color:var(--brown);margin-left:6px;">SOON</span>
+              </strong>
+              <span class="db-action__desc">Process an entire CSV of candidates</span>
+            </div>
+          </div>
+
+          <a href="/help" class="db-action">
+            <div class="db-action__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+                <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
+              </svg>
+            </div>
+            <div class="db-action__body">
+              <strong class="db-action__title">Documentation</strong>
+              <span class="db-action__desc">Pipeline guide, CSV template, config reference</span>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" class="db-action__arrow">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </a>
+
+        </div>
+      </div>
     </div>
-    <div class="pf-panel__body">
-      <div class="pf-quick-actions">
 
-        <a href="/candidate" class="pf-quick-action">
-          <div class="pf-quick-action__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <div class="pf-quick-action__body">
-            <strong>Single Candidate</strong>
-            <span>Upload CSV + PDF → get canonical profile</span>
-          </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="pf-quick-action__arrow">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </a>
+    <!-- Recent activity -->
+    <div class="db-panel">
+      <div class="db-panel__header">
+        <span class="db-panel__title">Recent Activity</span>
+        <span class="db-panel__subtitle" id="activity-count"></span>
+      </div>
+      <div class="db-panel__body">
+        <div id="activity-feed"></div>
+      </div>
+    </div>
 
-        <a href="#bulk" class="pf-quick-action pf-quick-action--disabled">
-          <div class="pf-quick-action__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-          </div>
-          <div class="pf-quick-action__body">
-            <strong>Bulk Upload <span class="pf-badge pf-badge--soon">Soon</span></strong>
-            <span>Process multiple candidates at once</span>
-          </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="pf-quick-action__arrow">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </a>
+  </div>
 
-        <a href="/help" class="pf-quick-action">
-          <div class="pf-quick-action__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
-            </svg>
+  <!-- Right: Pipeline stages -->
+  <div class="db-panel">
+    <div class="db-panel__header">
+      <span class="db-panel__title">Processing Pipeline</span>
+      <span class="db-panel__subtitle">6 deterministic stages</span>
+    </div>
+    <div class="db-panel__body">
+      <div class="db-pipeline">
+        <div class="db-step">
+          <div class="db-step__dot"></div>
+          <div class="db-step__body">
+            <strong>Parse</strong>
+            <span>Ingest CSV recruiter data and extract PDF resume text</span>
           </div>
-          <div class="pf-quick-action__body">
-            <strong>Documentation</strong>
-            <span>Pipeline guide, CSV template, config reference</span>
+        </div>
+        <div class="db-step">
+          <div class="db-step__dot"></div>
+          <div class="db-step__body">
+            <strong>Normalise</strong>
+            <span>E.164 phones · ISO Alpha-2 country · canonical skills · ISO 8601 dates</span>
           </div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="pf-quick-action__arrow">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </a>
-
+        </div>
+        <div class="db-step">
+          <div class="db-step__dot"></div>
+          <div class="db-step__body">
+            <strong>Merge</strong>
+            <span>Deterministic priority — Resume wins over CSV, dedup lists</span>
+          </div>
+        </div>
+        <div class="db-step">
+          <div class="db-step__dot"></div>
+          <div class="db-step__body">
+            <strong>Confidence Score</strong>
+            <span>0.5 single source → 0.85 dual → 1.0 triple verified</span>
+          </div>
+        </div>
+        <div class="db-step">
+          <div class="db-step__dot"></div>
+          <div class="db-step__body">
+            <strong>Validate</strong>
+            <span>Schema · email format · E.164 phone · required fields</span>
+          </div>
+        </div>
+        <div class="db-step" style="padding-bottom:0">
+          <div class="db-step__dot"></div>
+          <div class="db-step__body">
+            <strong>Project</strong>
+            <span>Configurable JSON output — include / exclude / rename fields</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Pipeline Overview -->
-  <div class="pf-panel">
-    <div class="pf-panel__header">
-      <h3 class="pf-panel__title">Pipeline Stages</h3>
-      <span class="pf-panel__badge">6 stages</span>
-    </div>
-    <div class="pf-panel__body">
-      <ol class="pf-pipeline-list">
-        <li class="pf-pipeline-step">
-          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
-          <div class="pf-pipeline-step__body">
-            <strong>Parse</strong>
-            <span>Extract raw data from CSV and PDF sources</span>
-          </div>
-        </li>
-        <li class="pf-pipeline-step">
-          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
-          <div class="pf-pipeline-step__body">
-            <strong>Normalise</strong>
-            <span>E.164 phones · ISO Alpha-2 · canonical skills · ISO 8601 dates</span>
-          </div>
-        </li>
-        <li class="pf-pipeline-step">
-          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
-          <div class="pf-pipeline-step__body">
-            <strong>Merge</strong>
-            <span>Deterministic priority merge — Resume &gt; CSV</span>
-          </div>
-        </li>
-        <li class="pf-pipeline-step">
-          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
-          <div class="pf-pipeline-step__body">
-            <strong>Confidence Scoring</strong>
-            <span>0.5 (single source) → 0.85 (dual) → 1.0 (triple)</span>
-          </div>
-        </li>
-        <li class="pf-pipeline-step">
-          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
-          <div class="pf-pipeline-step__body">
-            <strong>Validate</strong>
-            <span>Schema check · email format · E.164 phone · required fields</span>
-          </div>
-        </li>
-        <li class="pf-pipeline-step pf-pipeline-step--last">
-          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
-          <div class="pf-pipeline-step__body">
-            <strong>Project</strong>
-            <span>Configurable output — include / exclude / rename fields</span>
-          </div>
-        </li>
-      </ol>
-    </div>
-  </div>
-
-</div>
-
-<!-- ── Tech stack banner ─────────────────────────────────────── -->
-<div class="pf-tech-banner">
-  <span class="pf-tech-banner__label">Built with</span>
-  <div class="pf-tech-pills">
-    <span class="pf-tech-pill">FastAPI</span>
-    <span class="pf-tech-pill">Pydantic</span>
-    <span class="pf-tech-pill">pdfplumber</span>
-    <span class="pf-tech-pill">phonenumbers</span>
-    <span class="pf-tech-pill">pycountry</span>
-    <span class="pf-tech-pill">Gemini AI</span>
-    <span class="pf-tech-pill">Google OAuth</span>
-    <span class="pf-tech-pill">GitHub OAuth</span>
-  </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Animate stat counters — in a real app these would come from an API
-  function animateCount(id, target, suffix = "") {
-    const el = document.getElementById(id);
-    if (!el) return;
-    let start = 0;
-    const step = Math.ceil(target / 30);
-    const timer = setInterval(() => {
-      start = Math.min(start + step, target);
-      el.textContent = start + suffix;
-      if (start >= target) clearInterval(timer);
-    }, 30);
-  }
-  // Session-based demo counts stored in localStorage
+(function() {
+  // ── Stats from localStorage ──────────────────────────────────
   const runs = parseInt(localStorage.getItem("pf_runs") || "0");
-  animateCount("stat-profiles", runs);
-  animateCount("stat-validated", runs);
-  animateCount("stat-avg-conf", runs > 0 ? 82 : 0, "%");
-  animateCount("stat-exports", runs);
+
+  function animCount(id, target, suffix) {
+    const el = document.getElementById(id);
+    if (!el || target === 0) { if(el) el.textContent = target + (suffix||""); return; }
+    let n = 0;
+    const step = Math.max(1, Math.ceil(target / 28));
+    const t = setInterval(() => {
+      n = Math.min(n + step, target);
+      el.textContent = n + (suffix || "");
+      if (n >= target) clearInterval(t);
+    }, 32);
+  }
+
+  animCount("stat-profiles", runs);
+  animCount("stat-validated", runs);
+  animCount("stat-exports",   runs);
+
+  const avgConf = document.getElementById("stat-avg-conf");
+  if (runs > 0) {
+    avgConf.textContent = "82%";
+    document.getElementById("trend-profiles").textContent  = "+" + runs;
+  }
+
+  // ── Activity feed ─────────────────────────────────────────────
+  const feed = document.getElementById("activity-feed");
+  const actCount = document.getElementById("activity-count");
+
+  if (runs === 0) {
+    feed.innerHTML = `
+      <div class="db-empty">
+        <div class="db-empty__icon">📋</div>
+        <p class="db-empty__text">No profiles generated yet.<br>Upload your first candidate to get started.</p>
+        <a href="/candidate" class="pf-btn pf-btn--primary pf-btn--sm">Upload Candidate</a>
+      </div>`;
+    actCount.textContent = "no activity yet";
+  } else {
+    actCount.textContent = runs + " profile" + (runs !== 1 ? "s" : "");
+    const lastProfile = JSON.parse(localStorage.getItem("pf_last_profile") || "null");
+    const name = lastProfile
+      ? (lastProfile.name?.value || lastProfile.full_name?.value || "Candidate")
+      : "Candidate";
+
+    const items = [
+      { text: `<strong>${name}</strong> — profile generated`, time: "just now", active: true },
+      { text: `Profile exported as <strong>JSON</strong>`, time: "just now", active: false },
+    ];
+
+    feed.innerHTML = `<div class="db-activity">${items.map(i => `
+      <div class="db-activity-item">
+        <div class="db-activity-item__dot ${i.active ? 'db-activity-item__dot--active' : ''}"></div>
+        <span class="db-activity-item__text">${i.text}</span>
+        <span class="db-activity-item__time">${i.time}</span>
+      </div>`).join("")}</div>`;
+  }
+})();
 </script>
 {% endblock %}

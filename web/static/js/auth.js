@@ -8,18 +8,17 @@ const panelSignup = document.getElementById("panel-signup");
 
 function activateTab(tab) {
   const isSignin = tab === "signin";
-
   tabSignin.classList.toggle("auth-tab--active", isSignin);
   tabSignup.classList.toggle("auth-tab--active", !isSignin);
-  tabSignin.setAttribute("aria-selected", isSignin);
-  tabSignup.setAttribute("aria-selected", !isSignin);
-
   panelSignin.hidden = !isSignin;
   panelSignup.hidden = isSignin;
 }
 
-tabSignin.addEventListener("click", () => activateTab("signin"));
-tabSignup.addEventListener("click", () => activateTab("signup"));
+document.querySelectorAll(".auth-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    activateTab(btn.dataset.panel === "panel-signin" ? "signin" : "signup");
+  });
+});
 
 // ── Password visibility toggle ─────────────────────────────────
 document.querySelectorAll(".auth-eye").forEach(btn => {

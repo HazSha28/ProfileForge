@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Profile History — ProfileForge{% endblock %}
+
+{% block breadcrumb %}
+<a href="/dashboard" class="pf-breadcrumb__item pf-breadcrumb__item--link">Dashboard</a>
+<span class="pf-breadcrumb__sep">›</span>
+<span class="pf-breadcrumb__item">Profile History</span>
+{% endblock %}
+
+{% block topbar_actions %}
+<button class="pf-btn pf-btn--outline pf-btn--sm" id="clear-all-btn">Clear All</button>
+<a href="/candidate" class="pf-btn pf-btn--primary pf-btn--sm">+ New Profile</a>
+{% endblock %}
+
+{% block head %}
+<style>
+.hist-toolbar {
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:20px; flex-wrap:wrap;
+}
+.hist-search {
+  flex:1; min-width:220px;
+  display:flex; align-items:center; gap:8px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:8px 12px;
+  transition:border-color .2s;
+}
+.hist-search:focus-within { border-color:var(--brown-l); }
+.hist-search svg { color:var(--dim); flex-shrink:0; }
+.hist-search input {
+  flex:1; border:none; background:transparent;
+  color:var(--text-2); font-size:.875rem; outline:none;
+}
+.hist-search input::placeholder { color:var(--dim); }
+.hist-filter {
+  display:flex; align-items:center; gap:6px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:8px 12px;
+  font-size:.82rem; color:var(--muted); cursor:pointer;
+  transition:border-color .2s;
+}
+.hist-filter:hover { border-color:var(--brown-l); color:var(--text-2); }
+select.hist-filter { appearance:none; }
+
+.hist-table-wrap {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); overflow:hidden;
+}
+.hist-table { width:100%; border-collapse:collapse; }
+.hist-table th {
+  padding:11px 16px; text-align:left; font-size:.7rem;
+  font-weight:700; text-transform:uppercase; letter-spacing:.7px;
+  color:var(--dim); background:var(--surface-2);
+  border-bottom:1px solid var(--border); cursor:pointer;
+  user-select:none; white-space:nowrap;
+}
+.hist-table th:hover { color:var(--text-2); }
+.hist-table th svg { display:inline; vertical-align:middle; margin-left:4px; }
+.hist-table td {
+  padding:13px 16px; font-size:.85rem; color:var(--text-2);
+  border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
+.hist-table tbody tr { transition:background .15s; }
+.hist-table tbody tr:hover { background:var(--surface-2); }
+.hist-table tbody tr:last-child td { border-bottom:none; }
+
+.hist-name { font-weight:700; color:var(--text); }
+.hist-id   { font-family:var(--mono); font-size:.7rem; color:var(--dim); margin-top:2px; }
+.hist-conf-bar {
+  width:80px; height:5px; background:var(--border);
+  border-radius:3px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:6px;
+}
+.hist-conf-fill { height:100%; border-radius:3px; }
+.hist-status {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:.72rem; font-weight:700; padding:3px 9px; border-radius:20px;
+}
+.hist-status--ok  { background:rgba(58,125,82,.12); color:var(--green); }
+.hist-status--warn { background:rgba(176,125,32,.12); color:var(--amber); }
+.hist-actions { display:flex; align-items:center; gap:6px; }
+.hist-action-btn {
+  background:none; border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--dim); padding:5px 8px; cursor:pointer; font-size:.75rem;
+  display:inline-flex; align-items:center; gap:4px;
+  transition:border-color .15s, color .15s, background .15s;
+}
+.hist-action-btn:hover { border-color:var(--brown-l); color:var(--brown); background:var(--brown-glow); }
+.hist-action-btn--danger:hover { border-color:var(--red); color:var(--red); background:rgba(150,48,48,.06); }
+
+.hist-empty {
+  text-align:center; padding:72px 20px;
+}
+.hist-empty__icon { font-size:3rem; margin-bottom:14px; opacity:.3; }
+.hist-empty__title { font-size:1.1rem; font-weight:700; color:var(--text); margin-bottom:8px; }
+.hist-empty__sub { font-size:.875rem; color:var(--dim); margin-bottom:20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="pf-page-header">
+  <h2 class="pf-page-header__title">Profile History</h2>
+  <p class="pf-page-header__sub">All candidate profiles generated in this session. Search, sort, filter, and re-download.</p>
+</div>
+
+<!-- Toolbar -->
+<div class="hist-toolbar">
+  <div class="hist-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="hist-search-input" placeholder="Search by name, email, skills..." />
+  </div>
+  <select class="hist-filter" id="hist-sort">
+    <option value="date-desc">Newest first</option>
+    <option value="date-asc">Oldest first</option>
+    <option value="name-asc">Name A–Z</option>
+    <option value="conf-desc">Highest confidence</option>
+    <option value="conf-asc">Lowest confidence</option>
+  </select>
+  <select class="hist-filter" id="hist-status-filter">
+    <option value="all">All status</option>
+    <option value="ok">Passed validation</option>
+    <option value="warn">Has warnings</option>
+  </select>
+</div>
+
+<!-- Summary strip -->
+<div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;" id="hist-summary"></div>
+
+<!-- Table -->
+<div class="hist-table-wrap" id="hist-table-wrap">
+  <table class="hist-table" id="hist-table">
+    <thead>
+      <tr>
+        <th data-sort="name">Candidate <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M7 10l5 5 5-5"/></svg></th>
+        <th data-sort="date">Processed <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M7 10l5 5 5-5"/></svg></th>
+        <th data-sort="conf">Confidence <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M7 10l5 5 5-5"/></svg></th>
+        <th>Sources</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="hist-tbody"></tbody>
+  </table>
+  <div id="hist-empty" hidden class="hist-empty">
+    <div class="hist-empty__icon">📋</div>
+    <div class="hist-empty__title">No profiles yet</div>
+    <p class="hist-empty__sub">Generate your first candidate profile to see it here.</p>
+    <a href="/candidate" class="pf-btn pf-btn--primary">Upload Candidate</a>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/history.js"></script>
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Processing — ProfileForge{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/processing.css" />
+{% endblock %}
+
+{% block breadcrumb %}
+<span class="pf-breadcrumb__item">Processing</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Processing Header ───────────────────────────────────── -->
+<div class="pf-processing-header">
+  <div class="pf-processing-header__icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+    </svg>
+  </div>
+  <div class="pf-processing-header__text">
+    <h1 class="pf-processing-header__title">Processing Candidate Profile</h1>
+    <p class="pf-processing-header__subtitle">Running pipeline stages — please wait</p>
+  </div>
+</div>
+
+<!-- ── Pipeline Progress ───────────────────────────────────── -->
+<div class="pf-pipeline-progress">
+  <div class="pf-pipeline-progress__bar">
+    <div class="pf-pipeline-progress__fill" id="progress-fill"></div>
+  </div>
+  <div class="pf-pipeline-progress__status" id="progress-status">Initializing...</div>
+</div>
+
+<!-- ── Pipeline Stages ─────────────────────────────────────── -->
+<div class="pf-pipeline-stages">
+  
+  <div class="pf-stage" id="stage-parse" data-stage="parse">
+    <div class="pf-stage__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+    </div>
+    <div class="pf-stage__body">
+      <strong class="pf-stage__title">Parse Sources</strong>
+      <span class="pf-stage__desc">Extract raw data from CSV and PDF</span>
+    </div>
+    <div class="pf-stage__status">
+      <svg class="pf-stage__spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="40"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="pf-stage" id="stage-normalize" data-stage="normalize">
+    <div class="pf-stage__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+      </svg>
+    </div>
+    <div class="pf-stage__body">
+      <strong class="pf-stage__title">Normalize Data</strong>
+      <span class="pf-stage__desc">E.164 phones · ISO countries · canonical skills</span>
+    </div>
+    <div class="pf-stage__status">
+      <svg class="pf-stage__spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="40"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="pf-stage" id="stage-merge" data-stage="merge">
+    <div class="pf-stage__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+      </svg>
+    </div>
+    <div class="pf-stage__body">
+      <strong class="pf-stage__title">Merge Records</strong>
+      <span class="pf-stage__desc">Deterministic priority merge — Resume > CSV</span>
+    </div>
+    <div class="pf-stage__status">
+      <svg class="pf-stage__spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="40"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="pf-stage" id="stage-confidence" data-stage="confidence">
+    <div class="pf-stage__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div class="pf-stage__body">
+      <strong class="pf-stage__title">Confidence Scoring</strong>
+      <span class="pf-stage__desc">Assign confidence based on source verification</span>
+    </div>
+    <div class="pf-stage__status">
+      <svg class="pf-stage__spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="40"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="pf-stage" id="stage-validate" data-stage="validate">
+    <div class="pf-stage__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div class="pf-stage__body">
+      <strong class="pf-stage__title">Validate Schema</strong>
+      <span class="pf-stage__desc">Check required fields and data integrity</span>
+    </div>
+    <div class="pf-stage__status">
+      <svg class="pf-stage__spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="40"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="pf-stage" id="stage-project" data-stage="project">
+    <div class="pf-stage__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+    </div>
+    <div class="pf-stage__body">
+      <strong class="pf-stage__title">Project Output</strong>
+      <span class="pf-stage__desc">Apply config and generate final profile</span>
+    </div>
+    <div class="pf-stage__status">
+      <svg class="pf-stage__spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="40"/>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Error Container (hidden by default) ─────────────────── -->
+<div class="pf-error-container" id="error-container" style="display: none;">
+  <div class="pf-error-container__icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+  </div>
+  <div class="pf-error-container__body">
+    <h3 class="pf-error-container__title">Processing Failed</h3>
+    <p class="pf-error-container__message" id="error-message">An error occurred during processing.</p>
+    <a href="/candidate" class="pf-btn pf-btn--primary">Try Again</a>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/pipeline.js"></script>
+{% endblock %}
