@@ -167,4 +167,3 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-*Built as an Eightfold Engineering Internship Assignment.*
