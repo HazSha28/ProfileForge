@@ -80,9 +80,10 @@
           <!-- Platform links -->
           <details class="pf-details" open>
             <summary class="pf-details__toggle">
+              <!-- link-2 icon -->
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                <path d="M15 7h3a5 5 0 0 1 0 10h-3m-6 0H6A5 5 0 0 1 6 7h3"/>
+                <line x1="8" y1="12" x2="16" y2="12"/>
               </svg>
               Platform Links
               <span class="pf-badge pf-badge--outline">Optional</span>
@@ -102,9 +103,14 @@
           <!-- Config -->
           <details class="pf-details">
             <summary class="pf-details__toggle">
+              <!-- sliders icon -->
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.07 4.93A10 10 0 1 0 4.93 19.07"/>
+                <line x1="4" y1="6" x2="20" y2="6"/>
+                <line x1="4" y1="12" x2="20" y2="12"/>
+                <line x1="4" y1="18" x2="20" y2="18"/>
+                <circle cx="8" cy="6" r="2" fill="currentColor" stroke="none"/>
+                <circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/>
+                <circle cx="10" cy="18" r="2" fill="currentColor" stroke="none"/>
               </svg>
               Output Config
               <span class="pf-badge pf-badge--outline">Advanced</span>
@@ -116,15 +122,19 @@
           </details>
 
           <div class="pf-error-banner" id="error-banner" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            <!-- alert-circle icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <circle cx="12" cy="16" r=".5" fill="currentColor" stroke="currentColor" stroke-width="1"/>
             </svg>
             <span id="error-text"></span>
           </div>
 
           <button type="submit" class="pf-btn pf-btn--primary pf-btn--full" id="submit-btn" disabled>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-              <polygon points="5 3 19 12 5 21 5 3"/>
+            <!-- zap / generate icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
             <span id="btn-label">Generate Profile</span>
             <span id="btn-spinner" hidden>
