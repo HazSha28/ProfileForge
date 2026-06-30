@@ -60,11 +60,15 @@ _FUZZY_THRESHOLD_JAC = 0.75  # Jaccard fallback
 @dataclass
 class CsvRow:
     """One row from the recruiter CSV (raw strings, un-normalised)."""
-    index:     int
-    full_name: Optional[str]
-    email:     Optional[str]
-    phone:     Optional[str]
-    raw:       dict            # original row dict for csv_parser reuse
+    index:      int
+    full_name:  Optional[str]
+    email:      Optional[str]
+    phone:      Optional[str]
+    raw:        dict                      # original row dict for csv_parser reuse
+    regno:      Optional[str]  = None    # Registration / Roll number
+    linkedin:   Optional[str]  = None    # LinkedIn profile URL
+    github:     Optional[str]  = None    # GitHub profile URL
+    resume_url: Optional[str]  = None    # Drive / direct resume URL
 
 
 @dataclass
@@ -170,9 +174,19 @@ def _find_best_match(
     candidates: list[MatchResult] = []
 
     # Normalise row identifiers once
-    row_email       = row.email.strip().lower() if row.email else None
+    row_email        = row.email.strip().lower() if row.email else None
     row_phone_digits = _phone_to_digits(row.phone) if row.phone else None
-    row_norm_name   = normalize_name(row.full_name) if row.full_name else ""
+    row_norm_name    = normalize_name(row.full_name) if row.full_name else ""
+
+    # Registration number digits (e.g. "711523BCB041" → for filename matching)
+    row_regno = row.regno.strip().upper() if row.regno else None
+
+    # GitHub username from URL  e.g. "https://github.com/prakashb96" → "prakashb96"
+    row_github_user = None
+    if row.github:
+        m = re.search(r"github\.com/([^/\s?]+)", row.github, re.IGNORECASE)
+        if m:
+            row_github_user = m.group(1).lower()
 
     for ri in resume_indexes:
         if ri.path in already_matched:
@@ -184,12 +198,11 @@ def _find_best_match(
                 csv_row=row, resume_path=ri.path,
                 match_method="email", match_score=100.0,
             ))
-            continue   # email is definitive — no need to check lower priorities
+            continue
 
         # ── Priority 2: Phone ──────────────────────────────────
         if row_phone_digits:
             for rp in ri.phones:
-                # Compare last 10 digits to handle country-code differences
                 if _digits_match(row_phone_digits, rp):
                     candidates.append(MatchResult(
                         csv_row=row, resume_path=ri.path,
@@ -197,7 +210,23 @@ def _find_best_match(
                     ))
                     break
 
-        # ── Priority 3: Exact name ─────────────────────────────
+        # ── Priority 3: Registration number in filename ────────
+        # Handles filenames like "PRAKASH B-711523BCB041.pdf"
+        if row_regno and row_regno in ri.path.stem.upper():
+            candidates.append(MatchResult(
+                csv_row=row, resume_path=ri.path,
+                match_method="regno", match_score=93.0,
+            ))
+            continue
+
+        # ── Priority 4: GitHub username in filename ───────────
+        if row_github_user and row_github_user in ri.path.stem.lower():
+            candidates.append(MatchResult(
+                csv_row=row, resume_path=ri.path,
+                match_method="github", match_score=88.0,
+            ))
+
+        # ── Priority 5: Exact normalised name ─────────────────
         if row_norm_name and ri.norm_name and row_norm_name == ri.norm_name:
             candidates.append(MatchResult(
                 csv_row=row, resume_path=ri.path,
@@ -205,22 +234,23 @@ def _find_best_match(
             ))
             continue
 
-        # ── Priority 4: Fuzzy name ─────────────────────────────
+        # ── Priority 6: Fuzzy name ─────────────────────────────
         if row_norm_name and ri.norm_name:
             score = _fuzzy_score(row_norm_name, ri.norm_name)
-            if score >= _FUZZY_THRESHOLD_RF if _RAPIDFUZZ_AVAILABLE else score >= _FUZZY_THRESHOLD_JAC:
-                norm_score = score if _RAPIDFUZZ_AVAILABLE else score * 100
+            threshold = _FUZZY_THRESHOLD_RF if _RAPIDFUZZ_AVAILABLE else _FUZZY_THRESHOLD_JAC * 100
+            if score >= threshold:
                 candidates.append(MatchResult(
                     csv_row=row, resume_path=ri.path,
-                    match_method="fuzzy_name", match_score=float(norm_score),
+                    match_method="fuzzy_name", match_score=float(score),
                 ))
 
     if not candidates:
         return None
 
-    # Pick the highest-confidence match
-    # Priority order: email > phone > exact_name > fuzzy_name, then by score
-    _PRIORITY = {"email": 4, "phone": 3, "exact_name": 2, "fuzzy_name": 1, "none": 0}
+    _PRIORITY = {
+        "email": 6, "phone": 5, "regno": 4, "github": 3,
+        "exact_name": 2, "fuzzy_name": 1, "none": 0,
+    }
     best = max(
         candidates,
         key=lambda m: (_PRIORITY.get(m.match_method, 0), m.match_score)
@@ -263,9 +293,17 @@ def _build_resume_index(path: Path) -> ResumeIndex:
         if d and len(d) >= 7:
             ri.phones.add(d)
 
-    # Name candidate from filename (remove emails, noise words, separators)
+    # Name candidate from filename (remove emails, reg numbers, noise words, separators)
     name_stem = _EMAIL_RE.sub("", stem)
-    name_stem = re.sub(r"[_\-\.]+", " ", name_stem)
+
+    # Remove registration number patterns like "711523BCB041", "711523BAM023"
+    name_stem = re.sub(r"\b\d{6}[A-Z]{2,4}\d{3,}\b", " ", name_stem)
+    name_stem = re.sub(r"\b[A-Z]{2,}\d{4,}\b", " ", name_stem)  # e.g. "BAD001"
+
+    # Replace separators with spaces
+    name_stem = re.sub(r"[\-_\.]+", " ", name_stem)
+
+    # Remove noise words
     name_stem = re.sub(
         r"\b(resume|cv|profile|candidate|doc|final|updated|new|application)\b",
         " ", name_stem, flags=re.IGNORECASE

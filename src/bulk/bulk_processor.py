@@ -497,6 +497,13 @@ def _parse_bulk_csv(csv_bytes: bytes) -> list[CsvRow]:
     """
     Parse all rows from the recruiter CSV.
     Returns list[CsvRow] — one per data row (header excluded).
+
+    Handles flexible column names including:
+      - "Name of the Student", "Candidate Name", "full_name", "name"
+      - "Registration Number", "Reg No", "Roll No"
+      - "Github Profile Url", "LinkedIn Profile Url"
+      - "Resume Drive Url", "Resume"
+      - "Online Coding Platform URLs"
     """
     _ENCODINGS = ["utf-8-sig", "utf-8", "cp1252", "latin-1"]
     text = None
@@ -514,19 +521,65 @@ def _parse_bulk_csv(csv_bytes: bytes) -> list[CsvRow]:
     if not reader.fieldnames:
         raise ValueError("CSV file is empty or has no headers.")
 
-    # Normalise header lookup
+    # Normalise headers: strip whitespace + lowercase for lookup
     headers_lower = {h.strip().lower(): h.strip() for h in reader.fieldnames}
 
     def _col(aliases: list[str]) -> Optional[str]:
-        """Return the first matching column name."""
+        """Return the actual column name for the first matching alias."""
         for alias in aliases:
-            if alias in headers_lower:
-                return headers_lower[alias]
+            alias_lower = alias.strip().lower()
+            if alias_lower in headers_lower:
+                return headers_lower[alias_lower]
+            # Partial / contains match for verbose column names
+            for hdr_lower, hdr_orig in headers_lower.items():
+                if alias_lower in hdr_lower:
+                    return hdr_orig
         return None
 
-    col_name   = _col(["full_name", "name", "candidate_name", "fullname"])
-    col_email  = _col(["email", "email_address", "e-mail", "emails"])
-    col_phone  = _col(["phone", "phone_number", "mobile", "telephone", "phones"])
+    # Name — supports "Name of the Student", "Candidate Name", "full_name", etc.
+    col_name = _col([
+        "name of the student", "student name", "candidate name",
+        "full_name", "fullname", "full name", "name",
+    ])
+
+    # Registration / roll number — useful as secondary key
+    col_regno = _col([
+        "registration number", "reg no", "reg. no", "roll no",
+        "roll number", "regno", "registration no",
+    ])
+
+    # Email — usually not in a recruiter DB export, but try
+    col_email = _col([
+        "email", "email address", "email_address", "e-mail", "emails",
+    ])
+
+    # Phone — usually not in a recruiter DB export, but try
+    col_phone = _col([
+        "phone", "phone number", "phone_number", "mobile",
+        "telephone", "phones", "contact",
+    ])
+
+    # LinkedIn URL
+    col_linkedin = _col([
+        "linkedin profile url", "linkedin url", "linkedin", "linkedin_url",
+    ])
+
+    # GitHub URL
+    col_github = _col([
+        "github profile url", "github url", "github", "github_url",
+    ])
+
+    # Resume link (Drive URL etc.)
+    col_resume = _col([
+        "resume drive url", "resume url", "resume", "cv url", "cv link",
+    ])
+
+    logger.info(
+        "CSV columns detected → name=%r regno=%r email=%r phone=%r "
+        "linkedin=%r github=%r resume=%r",
+        col_name, col_regno, col_email, col_phone,
+        col_linkedin, col_github, col_resume,
+    )
 
     rows: list[CsvRow] = []
     for i, row in enumerate(reader, start=1):
@@ -536,14 +589,39 @@ def _parse_bulk_csv(csv_bytes: bytes) -> list[CsvRow]:
             v = row.get(col, "").strip()
             return v if v else None
 
+        name    = _get(col_name)
+        regno   = _get(col_regno)
+        email   = _get(col_email)
+        phone   = _get(col_phone)
+        linkedin = _get(col_linkedin)
+        github   = _get(col_github)
+        resume_url = _get(col_resume)
+
+        # Augment the raw dict with normalised keys so csv_parser can use it
+        augmented_raw = dict(row)
+        if name and "full_name" not in augmented_raw:
+            augmented_raw["full_name"] = name
+        if email and "email" not in augmented_raw:
+            augmented_raw["email"] = email
+        if phone and "phone" not in augmented_raw:
+            augmented_raw["phone"] = phone
+        if linkedin and "linkedin" not in augmented_raw:
+            augmented_raw["linkedin"] = linkedin
+
         rows.append(CsvRow(
             index=i,
-            full_name=_get(col_name),
-            email=_get(col_email),
-            phone=_get(col_phone),
-            raw=dict(row),
+            full_name=name,
+            email=email,
+            phone=phone,
+            raw=augmented_raw,
+            # Extra fields for matching
+            regno=regno,
+            linkedin=linkedin,
+            github=github,
+            resume_url=resume_url,
         ))
 
+    logger.info("Parsed %d candidate rows from CSV.", len(rows))
     return rows
 
 

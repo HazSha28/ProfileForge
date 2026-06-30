@@ -1,466 +1,640 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ProfileForge — Help & Documentation</title>
-  <link rel="icon" type="image/png" href="/static/img/logo.png" />
-  <link rel="stylesheet" href="/static/css/style.css" />
-  <link rel="stylesheet" href="/static/css/help.css" />
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Help & Docs — ProfileForge{% endblock %}
 
-  <!-- ── Header ─────────────────────────────────────────────── -->
-  <header class="header">
-    <div class="header__inner">
-      <div class="header__brand">
-        <img src="/static/img/logo.png" alt="ProfileForge logo" class="header__logo" />
-        <span class="header__subtitle">Candidate Data Transformer</span>
+{% block breadcrumb %}
+<span class="pf-breadcrumb__item">Help & Documentation</span>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── Help page layout ── */
+.help-wrap { display:grid; grid-template-columns:220px 1fr; gap:32px; align-items:start; }
+.help-toc {
+  position:sticky; top:calc(var(--topbar-h) + 20px);
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); padding:16px 0; overflow:hidden;
+}
+.help-toc__section {
+  font-size:.65rem; font-weight:800; letter-spacing:.8px; text-transform:uppercase;
+  color:var(--dim); padding:10px 16px 4px;
+}
+.help-toc__link {
+  display:block; padding:6px 16px; font-size:.81rem; color:var(--muted);
+  text-decoration:none; border-left:2px solid transparent;
+  transition:color .15s, background .15s, border-color .15s;
+}
+.help-toc__link:hover { color:var(--text-2); background:var(--surface-2); }
+.help-toc__link.active { color:var(--brown); border-left-color:var(--brown); font-weight:600; }
+
+/* ── Content ── */
+.help-body { min-width:0; }
+.help-section { margin-bottom:48px; scroll-margin-top:80px; }
+.help-badge {
+  display:inline-block; font-size:.65rem; font-weight:800; letter-spacing:.6px;
+  text-transform:uppercase; padding:3px 10px; border-radius:20px; margin-bottom:10px;
+  background:rgba(107,63,31,.1); color:var(--brown); border:1px solid rgba(107,63,31,.2);
+}
+.help-h1 { font-size:1.6rem; font-weight:800; color:var(--text); margin-bottom:10px; }
+.help-h2 { font-size:1.15rem; font-weight:800; color:var(--text); margin-bottom:10px; }
+.help-lead { font-size:.95rem; color:var(--muted); line-height:1.7; margin-bottom:20px; }
+.help-p  { font-size:.875rem; color:var(--muted); line-height:1.7; margin-bottom:12px; }
+.help-divider { border:none; border-top:1px solid var(--border); margin:0 0 48px; }
+
+/* Cards */
+.help-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:20px; }
+.help-card {
+  border-radius:12px; padding:16px; border:1px solid var(--border);
+  display:flex; gap:12px; align-items:flex-start;
+}
+.help-card--navy { background:linear-gradient(135deg,#0d1b2a,#162032); border-color:rgba(255,255,255,.07); }
+.help-card--navy strong, .help-card--navy p { color:#c4b09a; }
+.help-card--navy .help-card__icon { font-size:1.4rem; }
+.help-card--brown { background:rgba(107,63,31,.07); }
+.help-card--green  { background:rgba(58,125,82,.07); }
+.help-card__icon { font-size:1.3rem; flex-shrink:0; }
+.help-card__text strong { display:block; font-size:.85rem; font-weight:700; color:var(--text); margin-bottom:3px; }
+.help-card__text p { font-size:.78rem; color:var(--muted); margin:0; line-height:1.5; }
+
+/* Steps */
+.help-steps { list-style:none; display:flex; flex-direction:column; gap:14px; counter-reset:s; }
+.help-step { display:flex; gap:14px; align-items:flex-start; counter-increment:s; }
+.help-step__num {
+  width:26px; height:26px; border-radius:50%; flex-shrink:0;
+  background:var(--brown); color:#f2e8d9; font-size:.72rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+}
+.help-step__body strong { display:block; font-size:.875rem; font-weight:700; color:var(--text); margin-bottom:4px; }
+.help-step__body p { font-size:.82rem; color:var(--muted); line-height:1.6; margin:0; }
+
+/* Table */
+.help-table-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--border); margin-bottom:16px; }
+.help-table { width:100%; border-collapse:collapse; font-size:.83rem; }
+.help-table th { background:var(--surface-2); padding:9px 14px; text-align:left; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--dim); border-bottom:1px solid var(--border); }
+.help-table td { padding:10px 14px; color:var(--text-2); border-bottom:1px solid var(--border); vertical-align:top; }
+.help-table tbody tr:last-child td { border-bottom:none; }
+.help-table code { background:var(--surface-2); padding:1px 6px; border-radius:4px; font-family:var(--mono); font-size:.78rem; }
+
+/* Callouts */
+.help-callout {
+  padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:14px;
+  font-size:.83rem; line-height:1.6;
+}
+.help-callout--info { background:rgba(42,72,112,.08); border:1px solid rgba(42,72,112,.18); color:var(--text-2); }
+.help-callout--warn { background:rgba(176,125,32,.08); border:1px solid rgba(176,125,32,.2); color:var(--text-2); }
+.help-callout--green { background:rgba(58,125,82,.08); border:1px solid rgba(58,125,82,.2); color:var(--text-2); }
+
+/* Code block */
+.help-code {
+  background:var(--navy); color:#c4b09a; border-radius:var(--radius);
+  padding:16px 18px; font-family:var(--mono); font-size:.78rem; line-height:1.7;
+  overflow-x:auto; margin-bottom:16px; border:1px solid var(--navy-border);
+}
+
+/* Pills */
+.help-pills { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.help-pill {
+  background:rgba(107,63,31,.09); border:1px solid rgba(107,63,31,.18);
+  color:var(--brown); font-size:.75rem; padding:3px 10px; border-radius:20px;
+}
+
+/* Score badges */
+.help-score { display:inline-block; padding:2px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+.help-score--low  { background:rgba(150,48,48,.1);  color:var(--red); }
+.help-score--med  { background:rgba(176,125,32,.1); color:var(--amber); }
+.help-score--high { background:rgba(58,125,82,.1);  color:var(--green); }
+.help-score--max  { background:rgba(42,72,112,.1);  color:#5a90c8; }
+
+/* Match priority chain */
+.help-priority { display:flex; flex-direction:column; gap:6px; }
+.help-priority__item {
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  font-size:.83rem;
+}
+.help-priority__num {
+  width:22px; height:22px; border-radius:50%; font-size:.65rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.p1 { background:rgba(58,125,82,.15);  color:var(--green); }
+.p2 { background:rgba(42,72,112,.15);  color:#5a90c8; }
+.p3 { background:rgba(107,63,31,.15);  color:var(--brown); }
+.p4 { background:rgba(176,125,32,.15); color:var(--amber); }
+.p5 { background:rgba(91,74,138,.15);  color:var(--purple); }
+.p6 { background:rgba(150,48,48,.15);  color:var(--red); }
+
+/* FAQ */
+.help-faq { display:flex; flex-direction:column; gap:8px; }
+.help-faq__item {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-sm); overflow:hidden;
+}
+.help-faq__item summary {
+  padding:12px 16px; font-size:.875rem; font-weight:600; color:var(--text);
+  cursor:pointer; list-style:none; transition:background .15s;
+}
+.help-faq__item summary:hover { background:var(--surface-2); }
+.help-faq__item p { padding:0 16px 14px; font-size:.83rem; color:var(--muted); line-height:1.6; margin:0; }
+
+/* Responsive */
+@media (max-width:900px) {
+  .help-wrap { grid-template-columns:1fr; }
+  .help-toc { position:static; }
+  .help-cards { grid-template-columns:1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="help-wrap">
+
+<!-- ── Table of Contents ──────────────────────────────────── -->
+<aside class="help-toc" id="help-toc">
+  <p class="help-toc__section">Getting Started</p>
+  <a href="#overview"     class="help-toc__link">Overview</a>
+  <a href="#quickstart"   class="help-toc__link">Quick Start</a>
+
+  <p class="help-toc__section">Single Candidate</p>
+  <a href="#csv-source"   class="help-toc__link">Recruiter CSV</a>
+  <a href="#pdf-source"   class="help-toc__link">Resume PDF</a>
+  <a href="#skills"       class="help-toc__link">Skills Extraction</a>
+  <a href="#platform-links" class="help-toc__link">Platform Links</a>
+
+  <p class="help-toc__section">Bulk Processing</p>
+  <a href="#bulk-overview"  class="help-toc__link">How Bulk Works</a>
+  <a href="#bulk-matching"  class="help-toc__link">Resume Matching</a>
+  <a href="#bulk-csv"       class="help-toc__link">Bulk CSV Format</a>
+  <a href="#bulk-zip"       class="help-toc__link">Resume ZIP Format</a>
+
+  <p class="help-toc__section">Pipeline</p>
+  <a href="#normalisation"  class="help-toc__link">Normalisation</a>
+  <a href="#merging"        class="help-toc__link">Merge Policy</a>
+  <a href="#confidence"     class="help-toc__link">Confidence Scores</a>
+  <a href="#provenance"     class="help-toc__link">Provenance</a>
+
+  <p class="help-toc__section">Output</p>
+  <a href="#output-schema"  class="help-toc__link">Output Schema</a>
+  <a href="#config"         class="help-toc__link">Config File</a>
+  <a href="#validation"     class="help-toc__link">Validation</a>
+
+  <p class="help-toc__section">Reference</p>
+  <a href="#phone-formats"  class="help-toc__link">Phone Formats</a>
+  <a href="#skills-map"     class="help-toc__link">Skills Aliases</a>
+  <a href="#faq"            class="help-toc__link">FAQ</a>
+</aside>
+
+<!-- ── Main Content ───────────────────────────────────────── -->
+<div class="help-body">
+
+<!-- Overview -->
+<section class="help-section" id="overview">
+  <div class="help-badge">Getting Started</div>
+  <h1 class="help-h1">ProfileForge Documentation</h1>
+  <p class="help-lead">
+    ProfileForge transforms scattered candidate data from multiple sources into a single
+    validated, scored canonical profile — with full provenance on every field.
+    It supports both single-candidate and bulk batch processing.
+  </p>
+  <div class="help-cards">
+    <div class="help-card help-card--navy">
+      <div class="help-card__icon">📥</div>
+      <div class="help-card__text">
+        <strong>Input</strong>
+        <p>Recruiter CSV + Resume PDF + Platform links. Bulk: CSV + ZIP of resumes.</p>
       </div>
-      <nav class="header__nav">
-        <a href="/" class="header__nav-link">App</a>
-        <a href="/help" class="header__nav-link header__nav-link--active">Help</a>
-        <a href="/login" class="header__nav-link header__nav-link--btn">Sign In</a>
-      </nav>
     </div>
-  </header>
+    <div class="help-card help-card--brown">
+      <div class="help-card__icon">⚙️</div>
+      <div class="help-card__text">
+        <strong>Pipeline</strong>
+        <p>Parse → Normalise → Merge → Confidence → Validate → Project</p>
+      </div>
+    </div>
+    <div class="help-card help-card--green">
+      <div class="help-card__icon">📤</div>
+      <div class="help-card__text">
+        <strong>Output</strong>
+        <p>Canonical JSON with sources + confidence per field. One file per candidate.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<hr class="help-divider"/>
 
-  <div class="help-layout">
+<!-- Quick Start -->
+<section class="help-section" id="quickstart">
+  <h2 class="help-h2">Quick Start — Single Candidate</h2>
+  <ol class="help-steps">
+    <li class="help-step">
+      <div class="help-step__num">1</div>
+      <div class="help-step__body">
+        <strong>Go to New Profile</strong>
+        <p>Click <em>New Profile</em> in the sidebar or dashboard.</p>
+      </div>
+    </li>
+    <li class="help-step">
+      <div class="help-step__num">2</div>
+      <div class="help-step__body">
+        <strong>Upload a Recruiter CSV</strong>
+        <p>One row per candidate. Column names are flexible — see the CSV section below.</p>
+      </div>
+    </li>
+    <li class="help-step">
+      <div class="help-step__num">3</div>
+      <div class="help-step__body">
+        <strong>Upload a Resume PDF</strong>
+        <p>Text-based PDFs only (not scanned images). AI extraction runs if a Gemini API key is configured.</p>
+      </div>
+    </li>
+    <li class="help-step">
+      <div class="help-step__num">4</div>
+      <div class="help-step__body">
+        <strong>Click Generate Profile</strong>
+        <p>Pipeline runs in seconds. Review the profile, then download the JSON.</p>
+      </div>
+    </li>
+  </ol>
+</section>
+<hr class="help-divider"/>
 
-    <!-- ── Sidebar ────────────────────────────────────────────── -->
-    <aside class="help-sidebar">
-      <nav class="help-nav">
-        <p class="help-nav__section">Getting Started</p>
-        <a href="#overview"     class="help-nav__link help-nav__link--active">Overview</a>
-        <a href="#quickstart"   class="help-nav__link">Quick Start</a>
+<!-- CSV Source -->
+<section class="help-section" id="csv-source">
+  <h2 class="help-h2">Recruiter CSV</h2>
+  <p class="help-p">One row per candidate. Column names are matched case-insensitively with flexible aliases.</p>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Field</th><th>Accepted Column Names</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Name</td><td><code>Name of the Student</code>, <code>full_name</code>, <code>name</code>, <code>candidate_name</code></td><td>Jane Doe</td></tr>
+        <tr><td>Registration</td><td><code>Registration Number</code>, <code>reg no</code>, <code>roll no</code></td><td>711523BCB041</td></tr>
+        <tr><td>Email</td><td><code>email</code>, <code>email_address</code>, <code>e-mail</code></td><td>jane@example.com</td></tr>
+        <tr><td>Phone</td><td><code>phone</code>, <code>mobile</code>, <code>telephone</code></td><td>+91 9876543210</td></tr>
+        <tr><td>LinkedIn</td><td><code>LinkedIn Profile Url</code>, <code>linkedin</code></td><td>linkedin.com/in/jane</td></tr>
+        <tr><td>GitHub</td><td><code>Github Profile Url</code>, <code>github</code></td><td>github.com/jane</td></tr>
+        <tr><td>Resume</td><td><code>Resume Drive Url</code>, <code>resume</code>, <code>cv url</code></td><td>drive.google.com/…</td></tr>
+        <tr><td>Skills</td><td><code>skills</code>, <code>skill_set</code>, <code>technologies</code></td><td>Python, SQL, Docker</td></tr>
+        <tr><td>Years Exp</td><td><code>years_experience</code>, <code>experience_years</code></td><td>4</td></tr>
+        <tr><td>Country</td><td><code>country</code></td><td>India / IN / United States</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="help-callout help-callout--info">
+    <strong>Multiple values:</strong> Skills can be comma or semicolon separated in one cell — <code>Python, JavaScript; SQL</code>
+  </div>
+</section>
+<hr class="help-divider"/>
 
-        <p class="help-nav__section">Input Sources</p>
-        <a href="#csv-source"   class="help-nav__link">Recruiter CSV</a>
-        <a href="#pdf-source"   class="help-nav__link">Resume PDF</a>
-        <a href="#platform-links" class="help-nav__link">Platform Links</a>
+<!-- PDF Source -->
+<section class="help-section" id="pdf-source">
+  <h2 class="help-h2">Resume PDF</h2>
+  <p class="help-p">ProfileForge uses AI (Gemini 1.5 Flash) when a key is configured, or falls back to regex extraction.</p>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Field</th><th>Method</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Name</td><td>First non-contact line heuristic</td><td>Best when name is on line 1</td></tr>
+        <tr><td>Email</td><td>RFC 5321 regex + AI</td><td>All emails captured</td></tr>
+        <tr><td>Phone</td><td>International regex + phonenumbers library</td><td>All formats → E.164</td></tr>
+        <tr><td>LinkedIn / GitHub</td><td>URL pattern + PyMuPDF link annotations</td><td>Catches hidden hyperlinks</td></tr>
+        <tr><td>Technical Skills</td><td>Skills section detection + AI</td><td>Comma, pipe, bullet delimiters</td></tr>
+        <tr><td>Soft Skills</td><td>Soft Skills / Extracurricular section</td><td>Communication, Leadership, etc.</td></tr>
+        <tr><td>Experience</td><td>Date range pattern + AI</td><td>ISO 8601 normalised</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="help-callout help-callout--warn">
+    <strong>Scanned PDFs</strong> are not supported — they contain no extractable text. Use text-based PDFs only.
+  </div>
+</section>
+<hr class="help-divider"/>
 
-        <p class="help-nav__section">Pipeline</p>
-        <a href="#normalisation" class="help-nav__link">Normalisation</a>
-        <a href="#merging"       class="help-nav__link">Merge Policy</a>
-        <a href="#confidence"    class="help-nav__link">Confidence Scores</a>
-        <a href="#provenance"    class="help-nav__link">Provenance</a>
+<!-- Skills -->
+<section class="help-section" id="skills">
+  <h2 class="help-h2">Skills Extraction</h2>
+  <p class="help-p">ProfileForge extracts <strong>three categories</strong> of skills from resumes:</p>
+  <div class="help-cards" style="grid-template-columns:repeat(3,1fr)">
+    <div class="help-card help-card--brown">
+      <div class="help-card__icon">💻</div>
+      <div class="help-card__text">
+        <strong>Technical</strong>
+        <p>Python, React, Docker, SQL, AWS, TensorFlow, Git, and 80+ more</p>
+      </div>
+    </div>
+    <div class="help-card help-card--green">
+      <div class="help-card__icon">🤝</div>
+      <div class="help-card__text">
+        <strong>Soft Skills</strong>
+        <p>Communication, Leadership, Problem Solving, Time Management, and more</p>
+      </div>
+    </div>
+    <div class="help-card help-card--navy">
+      <div class="help-card__icon">🏆</div>
+      <div class="help-card__text">
+        <strong>Extracurricular</strong>
+        <p>Hackathon Participation, Volunteering, NSS, NCC, Technical Writing, and more</p>
+      </div>
+    </div>
+  </div>
+  <p class="help-p" style="margin-top:14px;">Section headers recognised: <em>Skills, Technical Skills, Soft Skills, Core Skills, Tools & Technologies, Extracurricular, Activities, Interests, Strengths</em> — all case-insensitive.</p>
+</section>
+<hr class="help-divider"/>
 
-        <p class="help-nav__section">Output</p>
-        <a href="#output-schema" class="help-nav__link">Output Schema</a>
-        <a href="#config"        class="help-nav__link">Config File</a>
-        <a href="#validation"    class="help-nav__link">Validation</a>
+<!-- Bulk Overview -->
+<section class="help-section" id="bulk-overview">
+  <div class="help-badge">Bulk Processing</div>
+  <h2 class="help-h2">How Bulk Processing Works</h2>
+  <ol class="help-steps">
+    <li class="help-step"><div class="help-step__num">1</div><div class="help-step__body"><strong>Upload Recruiter CSV</strong><p>One row per candidate. Supports <code>Name of the Student</code>, <code>Registration Number</code>, GitHub/LinkedIn URLs, etc.</p></div></li>
+    <li class="help-step"><div class="help-step__num">2</div><div class="help-step__body"><strong>Upload Resume ZIP</strong><p>A ZIP archive containing all PDF resumes. Filenames should include the candidate's name, email, phone, or registration number.</p></div></li>
+    <li class="help-step"><div class="help-step__num">3</div><div class="help-step__body"><strong>Match Resumes to CSV Rows</strong><p>The matching engine runs 6 strategies in priority order (see below). Processing never stops — unmatched records are flagged as warnings.</p></div></li>
+    <li class="help-step"><div class="help-step__num">4</div><div class="help-step__body"><strong>Full Pipeline per Candidate</strong><p>Each matched pair runs Parse → Normalise → Merge → Confidence → Validate → Project.</p></div></li>
+    <li class="help-step"><div class="help-step__num">5</div><div class="help-step__body"><strong>Download Results</strong><p>One <code>candidate_NNN.json</code> per candidate + <code>bulk_summary.json</code> with job stats. View in Bulk History.</p></div></li>
+  </ol>
+</section>
+<hr class="help-divider"/>
 
-        <p class="help-nav__section">Reference</p>
-        <a href="#csv-template"  class="help-nav__link">CSV Template</a>
-        <a href="#skills-map"    class="help-nav__link">Skills Aliases</a>
-        <a href="#faq"           class="help-nav__link">FAQ</a>
-      </nav>
-    </aside>
+<!-- Bulk Matching -->
+<section class="help-section" id="bulk-matching">
+  <h2 class="help-h2">Resume Matching Strategy</h2>
+  <p class="help-p">Matching uses a deterministic 6-tier priority chain. The highest-priority match wins. If multiple resumes match, the highest-score one is chosen.</p>
+  <div class="help-priority">
+    <div class="help-priority__item"><div class="help-priority__num p1">1</div><strong style="min-width:130px">Email</strong> Email found in resume filename or PDF content matches CSV email</div>
+    <div class="help-priority__item"><div class="help-priority__num p2">2</div><strong style="min-width:130px">Phone</strong> Phone extracted from resume matches CSV phone (last-10-digit comparison, E.164-aware)</div>
+    <div class="help-priority__item"><div class="help-priority__num p3">3</div><strong style="min-width:130px">Reg Number</strong> Registration/roll number (e.g. <code>711523BCB041</code>) found in resume filename</div>
+    <div class="help-priority__item"><div class="help-priority__num p4">4</div><strong style="min-width:130px">GitHub User</strong> GitHub username from CSV URL found in resume filename</div>
+    <div class="help-priority__item"><div class="help-priority__num p5">5</div><strong style="min-width:130px">Exact Name</strong> Normalised name from filename matches CSV name (strips initials, accents, punctuation)</div>
+    <div class="help-priority__item"><div class="help-priority__num p6">6</div><strong style="min-width:130px">Fuzzy Name</strong> RapidFuzz <code>token_set_ratio ≥ 90%</code> — handles middle names, initials, word order</div>
+  </div>
+  <div class="help-callout help-callout--green" style="margin-top:14px;">
+    <strong>Name normalisation:</strong> "AYISHATHUL HAZEENA S" → "ayishathul hazeena" (strips single-char initials, accents, dots, commas, apostrophes)
+  </div>
+</section>
+<hr class="help-divider"/>
 
-    <!-- ── Content ────────────────────────────────────────────── -->
-    <main class="help-content">
+<!-- Bulk CSV Format -->
+<section class="help-section" id="bulk-csv">
+  <h2 class="help-h2">Bulk CSV Format</h2>
+  <p class="help-p">The bulk processor auto-detects column names using partial matching. All of the following are recognised out of the box:</p>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Typical Column Name in Recruiter Sheet</th><th>Maps to</th></tr></thead>
+      <tbody>
+        <tr><td><code>Name of the Student</code></td><td>Candidate name</td></tr>
+        <tr><td><code>Registration Number</code></td><td>Reg/roll number (used for filename matching)</td></tr>
+        <tr><td><code>Github Profile Url</code></td><td>GitHub URL (username extracted for matching)</td></tr>
+        <tr><td><code>LinkedIn Profile Url</code></td><td>LinkedIn URL</td></tr>
+        <tr><td><code>Resume Drive Url</code></td><td>Resume link (stored in profile)</td></tr>
+        <tr><td><code>Online Coding Platform URLs</code></td><td>Other platform links</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<hr class="help-divider"/>
 
-      <!-- ── Overview ───────────────────────────────────────── -->
-      <section class="help-section" id="overview">
-        <div class="help-section__badge">Getting Started</div>
-        <h1 class="help-h1">ProfileForge Documentation</h1>
-        <p class="help-lead">
-          ProfileForge merges heterogeneous candidate data from multiple sources into
-          a single, validated, canonical JSON profile — with full provenance tracking
-          and deterministic confidence scoring on every field.
-        </p>
+<!-- Bulk ZIP -->
+<section class="help-section" id="bulk-zip">
+  <h2 class="help-h2">Resume ZIP Format</h2>
+  <p class="help-p">Package all resume PDFs into a single <code>.zip</code> file. For the best match rate, name files using one of these conventions:</p>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Filename Example</th><th>Match Method Used</th></tr></thead>
+      <tbody>
+        <tr><td><code>PRAKASH B-711523BCB041.pdf</code></td><td>Registration number</td></tr>
+        <tr><td><code>LAKSHANA SAMPATH - 711523BCB031.pdf</code></td><td>Registration number</td></tr>
+        <tr><td><code>john.doe@company.com_resume.pdf</code></td><td>Email</td></tr>
+        <tr><td><code>+919876543210_cv.pdf</code></td><td>Phone</td></tr>
+        <tr><td><code>prakashb96_resume.pdf</code></td><td>GitHub username</td></tr>
+        <tr><td><code>John_Doe_Resume.pdf</code></td><td>Exact / fuzzy name</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="help-callout help-callout--info">
+    If the resume filename doesn't contain any identifier, ProfileForge reads the first 2 pages of the PDF to extract email and phone for matching.
+  </div>
+</section>
+<hr class="help-divider"/>
 
-        <div class="help-cards">
-          <div class="help-card help-card--navy">
-            <div class="help-card__icon">📥</div>
-            <div class="help-card__text">
-              <strong>Input</strong>
-              Recruiter CSV + Resume PDF + optional platform links
-            </div>
-          </div>
-          <div class="help-card help-card--brown">
-            <div class="help-card__icon">⚙️</div>
-            <div class="help-card__text">
-              <strong>Pipeline</strong>
-              Parse → Normalise → Merge → Score → Validate → Project
-            </div>
-          </div>
-          <div class="help-card help-card--green">
-            <div class="help-card__icon">📤</div>
-            <div class="help-card__text">
-              <strong>Output</strong>
-              Structured JSON with sources and confidence per field
-            </div>
-          </div>
-        </div>
-      </section>
+<!-- Normalisation -->
+<section class="help-section" id="normalisation">
+  <div class="help-badge">Pipeline</div>
+  <h2 class="help-h2">Normalisation</h2>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Field</th><th>Rule</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Phone</td><td>E.164 via libphonenumber. Country normalised to ISO Alpha-2 first.</td><td><code>(+91)9876543210</code> → <code>+919876543210</code></td></tr>
+        <tr><td>Email</td><td>Lowercase + RFC 5321 validation</td><td><code>Jane@EXAMPLE.com</code> → <code>jane@example.com</code></td></tr>
+        <tr><td>Name</td><td>Title case</td><td><code>JOHN DOE</code> → <code>John Doe</code></td></tr>
+        <tr><td>Country</td><td>ISO Alpha-2 via pycountry fuzzy search</td><td><code>United States</code> → <code>US</code>, <code>India</code> → <code>IN</code></td></tr>
+        <tr><td>Skills</td><td>130+ alias map → canonical name</td><td><code>JS</code> → <code>JavaScript</code>, <code>problem solving</code> → <code>Problem Solving</code></td></tr>
+        <tr><td>Dates</td><td>ISO 8601 (YYYY-MM-DD) via python-dateutil</td><td><code>Jan 2022</code> → <code>2022-01-01</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<hr class="help-divider"/>
 
-      <hr class="help-divider" />
+<!-- Merge Policy -->
+<section class="help-section" id="merging">
+  <h2 class="help-h2">Merge Policy</h2>
+  <p class="help-p">Deterministic — no randomness. Source priority: <strong>Resume &gt; CSV</strong>.</p>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Field Type</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td>Scalar (name, headline, years)</td><td>Highest-priority source with a non-null value wins</td></tr>
+        <tr><td>Lists (emails, phones, skills)</td><td>Deduplicated union — Resume values first</td></tr>
+        <tr><td>Nested (location, links)</td><td>Each sub-field merged independently with scalar rule</td></tr>
+        <tr><td>Missing everywhere</td><td><code>null</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<hr class="help-divider"/>
 
-      <!-- ── Quick Start ─────────────────────────────────────── -->
-      <section class="help-section" id="quickstart">
-        <h2 class="help-h2">Quick Start</h2>
-        <p>Follow these three steps to generate your first canonical profile.</p>
+<!-- Confidence -->
+<section class="help-section" id="confidence">
+  <h2 class="help-h2">Confidence Scores</h2>
+  <p class="help-p">Every field carries a score from <code>0.0</code> to <code>1.0</code>.</p>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Sources</th><th>Score</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>CSV only</td><td><span class="help-score help-score--low">0.5</span></td><td>Recruiter-supplied, single source</td></tr>
+        <tr><td>Resume only</td><td><span class="help-score help-score--med">0.6</span></td><td>Candidate-authored, single source</td></tr>
+        <tr><td>Resume + CSV</td><td><span class="help-score help-score--high">0.85</span></td><td>Cross-verified by two sources</td></tr>
+        <tr><td>Resume + CSV + LinkedIn</td><td><span class="help-score help-score--max">1.0</span></td><td>Triple-verified</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<hr class="help-divider"/>
 
-        <ol class="help-steps">
-          <li class="help-step">
-            <div class="help-step__num">1</div>
-            <div class="help-step__body">
-              <strong>Upload a Recruiter CSV</strong>
-              <p>Prepare a CSV file with candidate details. The column names are flexible —
-              see the <a href="#csv-template" class="help-link">CSV Template</a> section for
-              the supported column names.</p>
-            </div>
-          </li>
-          <li class="help-step">
-            <div class="help-step__num">2</div>
-            <div class="help-step__body">
-              <strong>Upload a Resume PDF</strong>
-              <p>Upload the candidate's resume as a PDF. ProfileForge uses pattern recognition
-              to extract name, contact details, skills, and work experience from unstructured text.</p>
-            </div>
-          </li>
-          <li class="help-step">
-            <div class="help-step__num">3</div>
-            <div class="help-step__body">
-              <strong>Add Platform Links (Optional)</strong>
-              <p>Expand the <em>Candidate Platform Links</em> section and paste any known
-              profile URLs — LinkedIn, GitHub, portfolio, LeetCode, and more.</p>
-            </div>
-          </li>
-          <li class="help-step">
-            <div class="help-step__num">4</div>
-            <div class="help-step__body">
-              <strong>Click Transform Profile</strong>
-              <p>The pipeline runs in seconds. Review the canonical profile on screen,
-              then download the JSON or copy it directly.</p>
-            </div>
-          </li>
-        </ol>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── CSV Source ──────────────────────────────────────── -->
-      <section class="help-section" id="csv-source">
-        <h2 class="help-h2">Recruiter CSV</h2>
-        <p>The CSV is the <strong>structured source</strong>. It should contain one row per candidate.
-        Column names are matched case-insensitively and support common aliases.</p>
-
-        <div class="help-table-wrap" id="csv-template">
-          <table class="help-table">
-            <thead>
-              <tr>
-                <th>Canonical Field</th>
-                <th>Accepted Column Names</th>
-                <th>Example Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>full_name</td><td>full_name, name, candidate_name</td><td>Jane Doe</td></tr>
-              <tr><td>email</td><td>email, email_address, e-mail</td><td>jane@example.com</td></tr>
-              <tr><td>phone</td><td>phone, mobile, telephone</td><td>(415) 555-2671</td></tr>
-              <tr><td>city</td><td>city</td><td>San Francisco</td></tr>
-              <tr><td>region</td><td>region, state, province</td><td>CA</td></tr>
-              <tr><td>country</td><td>country</td><td>United States</td></tr>
-              <tr><td>linkedin</td><td>linkedin, linkedin_url</td><td>linkedin.com/in/janedoe</td></tr>
-              <tr><td>years_experience</td><td>years_experience, experience_years</td><td>5</td></tr>
-              <tr><td>skills</td><td>skills, skill_set, technologies</td><td>Python, SQL, Docker</td></tr>
-              <tr><td>timestamp</td><td>timestamp, date, updated_at</td><td>2024-01-15</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="help-callout help-callout--info">
-          <strong>Multiple values:</strong> Skills and emails can be comma-separated or
-          semicolon-separated within a single cell. Example: <code>Python, JavaScript; SQL</code>
-        </div>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── PDF Source ──────────────────────────────────────── -->
-      <section class="help-section" id="pdf-source">
-        <h2 class="help-h2">Resume PDF</h2>
-        <p>The PDF is the <strong>unstructured source</strong>. ProfileForge extracts text from
-        every page and uses pattern matching to locate fields.</p>
-
-        <div class="help-table-wrap">
-          <table class="help-table">
-            <thead>
-              <tr><th>Field</th><th>Extraction Method</th><th>Notes</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>Name</td><td>First non-contact line heuristic</td><td>Works best when name is on line 1</td></tr>
-              <tr><td>Email</td><td>RFC 5321 regex</td><td>All emails found are captured</td></tr>
-              <tr><td>Phone</td><td>International phone regex</td><td>Validated via libphonenumber</td></tr>
-              <tr><td>LinkedIn / GitHub</td><td>URL pattern matching</td><td>First match per platform</td></tr>
-              <tr><td>Skills</td><td>Skills section detection</td><td>Comma, pipe, bullet delimiters</td></tr>
-              <tr><td>Experience</td><td>Date range pattern (Mon YYYY – Mon YYYY)</td><td>Title/company from surrounding context</td></tr>
-              <tr><td>Years Experience</td><td>Derived from date range span</td><td>Falls back to "X years of experience" pattern</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="help-callout help-callout--warn">
-          <strong>Tip:</strong> PDF extraction quality depends on the resume layout.
-          Text-based PDFs work best. Scanned image PDFs are not supported.
-        </div>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── Platform Links ──────────────────────────────────── -->
-      <section class="help-section" id="platform-links">
-        <h2 class="help-h2">Platform Links</h2>
-        <p>The recruiter can manually supply profile URLs that may not appear in the CSV or PDF.
-        These are injected into the pipeline as part of the CSV record and flow through
-        the full merge and validation process.</p>
-
-        <div class="help-pills">
-          <span class="help-pill">LinkedIn</span>
-          <span class="help-pill">GitHub</span>
-          <span class="help-pill">Portfolio</span>
-          <span class="help-pill">LeetCode</span>
-          <span class="help-pill">HackerRank</span>
-          <span class="help-pill">Stack Overflow</span>
-          <span class="help-pill">X / Twitter</span>
-          <span class="help-pill">Kaggle</span>
-        </div>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── Normalisation ───────────────────────────────────── -->
-      <section class="help-section" id="normalisation">
-        <h2 class="help-h2">Normalisation</h2>
-        <p>Before merging, every field is normalised to a canonical form.</p>
-
-        <div class="help-table-wrap">
-          <table class="help-table">
-            <thead>
-              <tr><th>Field</th><th>Rule</th><th>Example</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>Phone</td><td>E.164 format via libphonenumber</td><td><code>(415) 555-2671</code> → <code>+14155552671</code></td></tr>
-              <tr><td>Email</td><td>Lowercase</td><td><code>Jane@EXAMPLE.com</code> → <code>jane@example.com</code></td></tr>
-              <tr><td>Name</td><td>Title case</td><td><code>JOHN DOE</code> → <code>John Doe</code></td></tr>
-              <tr><td>Country</td><td>ISO Alpha-2 via pycountry</td><td><code>United States</code> → <code>US</code></td></tr>
-              <tr><td>Skills</td><td>Alias map to canonical name</td><td><code>JS</code> → <code>JavaScript</code></td></tr>
-              <tr><td>Dates</td><td>ISO 8601 (YYYY-MM-DD)</td><td><code>Jan 2022</code> → <code>2022-01-01</code></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── Merge Policy ────────────────────────────────────── -->
-      <section class="help-section" id="merging">
-        <h2 class="help-h2">Merge Policy</h2>
-        <p>When both sources provide a value for the same field, a deterministic policy decides the winner. There is no random behaviour.</p>
-
-        <div class="help-table-wrap">
-          <table class="help-table">
-            <thead>
-              <tr><th>Field Type</th><th>Rule</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Scalar (name, headline, years)</td>
-                <td>Resume wins over CSV. If timestamps are available, the newest value wins regardless of source.</td>
-              </tr>
-              <tr>
-                <td>Lists (emails, phones, skills)</td>
-                <td>Deduplicated union of all sources. Order follows source priority (Resume first).</td>
-              </tr>
-              <tr>
-                <td>Nested (location, links)</td>
-                <td>Each sub-field merged independently using the scalar rule.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="help-callout help-callout--info">
-          <strong>Priority order:</strong> Resume &gt; CSV &gt; LinkedIn (if added in future)
-        </div>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── Confidence ──────────────────────────────────────── -->
-      <section class="help-section" id="confidence">
-        <h2 class="help-h2">Confidence Scores</h2>
-        <p>Every field carries a confidence score from <code>0.0</code> to <code>1.0</code> based on how many sources contributed to it.</p>
-
-        <div class="help-table-wrap">
-          <table class="help-table">
-            <thead>
-              <tr><th>Sources</th><th>Score</th><th>Meaning</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>Resume only</td><td><span class="help-score help-score--med">0.6</span></td><td>Candidate-authored, single source</td></tr>
-              <tr><td>CSV only</td><td><span class="help-score help-score--low">0.5</span></td><td>Recruiter-supplied, single source</td></tr>
-              <tr><td>Resume + CSV</td><td><span class="help-score help-score--high">0.85</span></td><td>Cross-verified by two sources</td></tr>
-              <tr><td>Resume + CSV + LinkedIn</td><td><span class="help-score help-score--max">1.0</span></td><td>Triple-verified, fully trusted</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── Provenance ──────────────────────────────────────── -->
-      <section class="help-section" id="provenance">
-        <h2 class="help-h2">Provenance</h2>
-        <p>Every field in the output records which source(s) it came from in a <code>sources</code> array.</p>
-        <pre class="help-code">{
+<!-- Provenance -->
+<section class="help-section" id="provenance">
+  <h2 class="help-h2">Provenance</h2>
+  <p class="help-p">Every output field records which sources contributed to it.</p>
+  <pre class="help-code">{
   "skills": {
-    "value": ["Python", "JavaScript", "Docker"],
+    "value": ["Python", "React", "Communication", "Leadership"],
     "sources": ["Resume", "CSV"],
     "confidence": 0.85
+  },
+  "phones": {
+    "value": ["+919876543210"],
+    "sources": ["Resume"],
+    "confidence": 0.6
   }
 }</pre>
-      </section>
+</section>
+<hr class="help-divider"/>
 
-      <hr class="help-divider" />
-
-      <!-- ── Output Schema ───────────────────────────────────── -->
-      <section class="help-section" id="output-schema">
-        <h2 class="help-h2">Output Schema</h2>
-        <p>The canonical profile JSON has the following top-level structure. Each field is wrapped with <code>value</code>, <code>sources</code>, and <code>confidence</code>.</p>
-        <pre class="help-code">{
-  "candidate_id": "uuid-v4",
-  "full_name":        { "value": "Jane Doe",      "sources": ["Resume","CSV"], "confidence": 0.85 },
-  "emails":           { "value": ["jane@..."],     "sources": ["Resume"],      "confidence": 0.6  },
-  "phones":           { "value": ["+14155552671"], "sources": ["CSV"],         "confidence": 0.5  },
-  "location":         { "value": { "city": "San Francisco", "region": "CA", "country": "US" }, ... },
+<!-- Output Schema -->
+<section class="help-section" id="output-schema">
+  <div class="help-badge">Output</div>
+  <h2 class="help-h2">Output Schema</h2>
+  <pre class="help-code">{
+  "candidate_id":     "uuid-v4",
+  "full_name":        { "value": "Jane Doe",            "sources": ["Resume","CSV"], "confidence": 0.85 },
+  "emails":           { "value": ["jane@example.com"],  "sources": ["Resume"],       "confidence": 0.6  },
+  "phones":           { "value": ["+919876543210"],     "sources": ["Resume"],       "confidence": 0.6  },
+  "location":         { "value": { "city": "Chennai", "region": "TN", "country": "IN" }, ... },
   "links":            { "value": { "linkedin": "...", "github": "..." }, ... },
-  "headline":         { "value": "Senior Software Engineer", ... },
-  "years_experience": { "value": 5, ... },
-  "skills":           { "value": ["Python", "JavaScript"], ... },
-  "experience":       { "value": [ { "title": "...", "company": "...", "start_date": "...", "end_date": "..." } ], ... }
+  "headline":         { "value": "Full Stack Developer", ... },
+  "years_experience": { "value": 2, ... },
+  "skills":           { "value": ["Python","React","Communication","Hackathon Participation"], ... },
+  "experience":       { "value": [{ "title": "...", "company": "...", "start_date": "2023-01-01" }], ... }
 }</pre>
-      </section>
+</section>
+<hr class="help-divider"/>
 
-      <hr class="help-divider" />
-
-      <!-- ── Config ──────────────────────────────────────────── -->
-      <section class="help-section" id="config">
-        <h2 class="help-h2">Config File</h2>
-        <p>Paste a JSON config in the <em>Advanced</em> section to control the output shape without changing any code.</p>
-
-        <div class="help-table-wrap">
-          <table class="help-table">
-            <thead>
-              <tr><th>Key</th><th>Type</th><th>Effect</th></tr>
-            </thead>
-            <tbody>
-              <tr><td><code>include</code></td><td>array of strings</td><td>Only output the listed fields</td></tr>
-              <tr><td><code>exclude</code></td><td>array of strings</td><td>Remove these fields from output</td></tr>
-              <tr><td><code>rename</code></td><td>object</td><td>Rename a field key in the output</td></tr>
-              <tr><td><code>missing_value</code></td><td>any</td><td>Substitute this value for null fields</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <pre class="help-code">{
-  "exclude": ["experience"],
-  "rename":  { "full_name": "name" },
-  "missing_value": "N/A"
-}</pre>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── Validation ──────────────────────────────────────── -->
-      <section class="help-section" id="validation">
-        <h2 class="help-h2">Validation</h2>
-        <p>Before writing the output, the validator checks every field. Warnings are shown in the results panel — the pipeline never crashes on bad data.</p>
-
-        <div class="help-table-wrap">
-          <table class="help-table">
-            <thead>
-              <tr><th>Check</th><th>Rule</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>Required fields</td><td><code>full_name</code> must be present and non-null</td></tr>
-              <tr><td>Email format</td><td>Must match RFC 5321 pattern</td></tr>
-              <tr><td>Phone format</td><td>Must be E.164 format</td></tr>
-              <tr><td>Years experience</td><td>Must be a number in range [0, 60]</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── Skills Aliases ──────────────────────────────────── -->
-      <section class="help-section" id="skills-map">
-        <h2 class="help-h2">Skills Aliases</h2>
-        <p>The following common aliases are automatically mapped to canonical skill names.</p>
-
-        <div class="help-pills">
-          <span class="help-pill">JS → JavaScript</span>
-          <span class="help-pill">java script → JavaScript</span>
-          <span class="help-pill">TS → TypeScript</span>
-          <span class="help-pill">py → Python</span>
-          <span class="help-pill">node → Node.js</span>
-          <span class="help-pill">nodejs → Node.js</span>
-          <span class="help-pill">reactjs → React</span>
-          <span class="help-pill">postgres → PostgreSQL</span>
-          <span class="help-pill">mongo → MongoDB</span>
-          <span class="help-pill">k8s → Kubernetes</span>
-          <span class="help-pill">sklearn → scikit-learn</span>
-          <span class="help-pill">golang → Go</span>
-          <span class="help-pill">csharp → C#</span>
-          <span class="help-pill">cpp → C++</span>
-        </div>
-      </section>
-
-      <hr class="help-divider" />
-
-      <!-- ── FAQ ────────────────────────────────────────────────── -->
-      <section class="help-section" id="faq">
-        <h2 class="help-h2">FAQ</h2>
-
-        <div class="help-faq">
-          <details class="help-faq__item">
-            <summary>What happens if my CSV uses different column names?</summary>
-            <p>ProfileForge uses a flexible alias map. Common variations like <code>mobile</code>, <code>telephone</code>, <code>e-mail</code>, and <code>state</code> are all recognised. If your column still isn't matched, check the CSV Template table above.</p>
-          </details>
-          <details class="help-faq__item">
-            <summary>What encoding should my CSV be saved in?</summary>
-            <p>Any encoding works. ProfileForge automatically tries UTF-8, UTF-8 with BOM, Windows-1252 (cp1252), and Latin-1 — so files exported from Excel are handled correctly.</p>
-          </details>
-          <details class="help-faq__item">
-            <summary>Does the PDF parser work with scanned resumes?</summary>
-            <p>No. Scanned PDFs are images and contain no extractable text. The resume must be a text-based PDF (the kind you can highlight and copy text from).</p>
-          </details>
-          <details class="help-faq__item">
-            <summary>Why is a field showing confidence 0.5 instead of 0.85?</summary>
-            <p>Confidence 0.5 means the field came from the CSV only. If the same field was also found on the resume, it would score 0.85. Check that the resume PDF contains the relevant information in a parseable format.</p>
-          </details>
-          <details class="help-faq__item">
-            <summary>Can I add my own skill aliases?</summary>
-            <p>Yes. Open <code>src/normalizers/skills.py</code> and add entries to the <code>SKILL_ALIASES</code> dictionary. The key is any lowercase alias, the value is the canonical display name.</p>
-          </details>
-          <details class="help-faq__item">
-            <summary>How do I control which fields appear in the output?</summary>
-            <p>Paste a config JSON in the <em>Advanced</em> section. Use <code>include</code> to whitelist fields, <code>exclude</code> to remove fields, and <code>rename</code> to change key names. See the <a href="#config" class="help-link">Config File</a> section for examples.</p>
-          </details>
-        </div>
-      </section>
-
-    </main>
+<!-- Config -->
+<section class="help-section" id="config">
+  <h2 class="help-h2">Config File</h2>
+  <p class="help-p">Paste JSON in the <em>Output Config (Advanced)</em> panel to control output shape without changing code.</p>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Key</th><th>Type</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>include</code></td><td>string[]</td><td>Only output these fields</td></tr>
+        <tr><td><code>exclude</code></td><td>string[]</td><td>Remove these fields</td></tr>
+        <tr><td><code>rename</code></td><td>object</td><td>Rename field keys</td></tr>
+        <tr><td><code>missing_value</code></td><td>any</td><td>Replace null with this value</td></tr>
+      </tbody>
+    </table>
   </div>
+  <pre class="help-code">{ "exclude": ["experience"], "rename": { "full_name": "name" }, "missing_value": "N/A" }</pre>
+</section>
+<hr class="help-divider"/>
 
-  <!-- ── Footer ─────────────────────────────────────────────── -->
-  <footer class="footer">
-    ProfileForge · Multi-Source Candidate Data Transformer
-  </footer>
+<!-- Phone Formats -->
+<section class="help-section" id="phone-formats">
+  <div class="help-badge">Reference</div>
+  <h2 class="help-h2">Supported Phone Formats</h2>
+  <p class="help-p">All formats are converted to E.164. A country hint (from the CSV location field) is used for bare 10-digit numbers.</p>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Input</th><th>E.164 Output</th></tr></thead>
+      <tbody>
+        <tr><td><code>9876543210</code></td><td><code>+919876543210</code> (with IN hint)</td></tr>
+        <tr><td><code>+91 9876543210</code></td><td><code>+919876543210</code></td></tr>
+        <tr><td><code>+91-9876543210</code></td><td><code>+919876543210</code></td></tr>
+        <tr><td><code>(+91)9876543210</code></td><td><code>+919876543210</code></td></tr>
+        <tr><td><code>91 9876543210</code></td><td><code>+919876543210</code></td></tr>
+        <tr><td><code>(415) 555-2671</code></td><td><code>+14155552671</code> (with US hint)</td></tr>
+        <tr><td><code>+44 20 7946 0958</code></td><td><code>+442079460958</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<hr class="help-divider"/>
 
-  <script src="/static/js/help.js"></script>
-</body>
-</html>
+<!-- Skills Map -->
+<section class="help-section" id="skills-map">
+  <h2 class="help-h2">Skills Aliases (130+ entries)</h2>
+  <p class="help-p">Common aliases automatically map to canonical names. Unknown skills are title-cased and preserved as-is.</p>
+  <p class="help-p"><strong>Technical:</strong></p>
+  <div class="help-pills">
+    <span class="help-pill">JS → JavaScript</span><span class="help-pill">TS → TypeScript</span>
+    <span class="help-pill">py → Python</span><span class="help-pill">nodejs → Node.js</span>
+    <span class="help-pill">reactjs → React</span><span class="help-pill">postgres → PostgreSQL</span>
+    <span class="help-pill">mongo → MongoDB</span><span class="help-pill">k8s → Kubernetes</span>
+    <span class="help-pill">sklearn → scikit-learn</span><span class="help-pill">golang → Go</span>
+    <span class="help-pill">csharp → C#</span><span class="help-pill">cpp → C++</span>
+    <span class="help-pill">tailwind → Tailwind CSS</span><span class="help-pill">nextjs → Next.js</span>
+    <span class="help-pill">rest api → REST APIs</span><span class="help-pill">cicd → CI/CD</span>
+  </div>
+  <p class="help-p" style="margin-top:14px;"><strong>Soft Skills:</strong></p>
+  <div class="help-pills">
+    <span class="help-pill">communication</span><span class="help-pill">leadership</span>
+    <span class="help-pill">problem solving</span><span class="help-pill">teamwork</span>
+    <span class="help-pill">time management</span><span class="help-pill">public speaking</span>
+    <span class="help-pill">critical thinking</span><span class="help-pill">adaptability</span>
+    <span class="help-pill">decision making</span><span class="help-pill">mentoring</span>
+  </div>
+  <p class="help-p" style="margin-top:14px;"><strong>Extracurricular:</strong></p>
+  <div class="help-pills">
+    <span class="help-pill">hackathon → Hackathon Participation</span>
+    <span class="help-pill">open source → Open Source Contribution</span>
+    <span class="help-pill">volunteering</span><span class="help-pill">NSS</span>
+    <span class="help-pill">NCC</span><span class="help-pill">event management</span>
+    <span class="help-pill">technical writing</span><span class="help-pill">blogging → Technical Blogging</span>
+  </div>
+</section>
+<hr class="help-divider"/>
+
+<!-- FAQ -->
+<section class="help-section" id="faq">
+  <h2 class="help-h2">FAQ</h2>
+  <div class="help-faq">
+    <details class="help-faq__item">
+      <summary>My CSV has "Name of the Student" — will it work?</summary>
+      <p>Yes. The bulk processor uses partial column-name matching, so <code>Name of the Student</code>, <code>Candidate Name</code>, <code>full_name</code>, and <code>name</code> all map to the name field automatically.</p>
+    </details>
+    <details class="help-faq__item">
+      <summary>All my candidates show "No Resume" — why?</summary>
+      <p>The matcher reads resume <em>filenames</em> first. If filenames don't contain the candidate's name, email, phone, or registration number, it falls back to reading PDF content. Name your files like <code>PRAKASH B-711523BCB041.pdf</code> for the best results.</p>
+    </details>
+    <details class="help-faq__item">
+      <summary>Skills are not being extracted from the resume.</summary>
+      <p>Ensure your resume has a clearly labelled section — <em>Skills</em>, <em>Technical Skills</em>, <em>Soft Skills</em>, <em>Extracurricular</em>, etc. If using AI extraction (Gemini key configured), skills are extracted from all sections automatically.</p>
+    </details>
+    <details class="help-faq__item">
+      <summary>Phone shows as empty even though it's in the PDF.</summary>
+      <p>Phone normalisation requires a country hint. If the CSV doesn't have a country column, add <code>"IN"</code> or <code>"US"</code> to the country field, or include the country code in the phone number itself (e.g. <code>+91 9876543210</code>).</p>
+    </details>
+    <details class="help-faq__item">
+      <summary>What encoding should my CSV be saved in?</summary>
+      <p>Any encoding works. ProfileForge automatically tries UTF-8, UTF-8-BOM, Windows-1252, and Latin-1 — files exported from Excel are handled correctly.</p>
+    </details>
+    <details class="help-faq__item">
+      <summary>Can I add my own skill aliases?</summary>
+      <p>Yes. Open <code>src/normalizers/skills.py</code> and add entries to the <code>SKILL_ALIASES</code> dictionary. Key is any lowercase alias, value is the canonical display name.</p>
+    </details>
+    <details class="help-faq__item">
+      <summary>How do I deploy ProfileForge?</summary>
+      <p>The repo includes <code>render.yaml</code> and <code>Procfile</code>. Go to <a href="https://render.com" target="_blank" class="pf-link">render.com</a>, connect your GitHub repo, add your env vars, and click Deploy. Update your Google/GitHub OAuth redirect URIs to the new domain after deployment.</p>
+    </details>
+  </div>
+</section>
+
+</div><!-- /.help-body -->
+</div><!-- /.help-wrap -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Highlight active TOC link on scroll
+const sections = document.querySelectorAll(".help-section[id]");
+const links    = document.querySelectorAll(".help-toc__link");
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove("active"));
+      const active = document.querySelector(`.help-toc__link[href="#${e.target.id}"]`);
+      if (active) active.classList.add("active");
+    }
+  });
+}, { rootMargin: "-20% 0px -70% 0px" });
+sections.forEach(s => observer.observe(s));
+</script>
+{% endblock %}
