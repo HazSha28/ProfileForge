@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — ProfileForge{% endblock %}
+
+{% block breadcrumb %}
+<span class="pf-breadcrumb__item">Dashboard</span>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="/candidate" class="pf-btn pf-btn--primary pf-btn--sm">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+  New Profile
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Welcome banner ───────────────────────────────────────── -->
+<div class="pf-welcome">
+  <div class="pf-welcome__text">
+    <h1 class="pf-welcome__heading">
+      {% if user %}Welcome back, {{ user.name.split()[0] }}{% else %}Welcome to ProfileForge{% endif %}
+    </h1>
+    <p class="pf-welcome__sub">
+      Transform scattered candidate data into one trusted profile.
+    </p>
+  </div>
+  <div class="pf-welcome__actions">
+    <a href="/candidate" class="pf-btn pf-btn--primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Upload Candidate
+    </a>
+    <a href="/help" class="pf-btn pf-btn--outline">Documentation</a>
+  </div>
+</div>
+
+<!-- ── Stats row ────────────────────────────────────────────── -->
+<div class="pf-stats">
+
+  <div class="pf-stat-card">
+    <div class="pf-stat-card__icon pf-stat-card__icon--blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <div class="pf-stat-card__body">
+      <span class="pf-stat-card__value" id="stat-profiles">—</span>
+      <span class="pf-stat-card__label">Profiles Generated</span>
+    </div>
+  </div>
+
+  <div class="pf-stat-card">
+    <div class="pf-stat-card__icon pf-stat-card__icon--green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <div class="pf-stat-card__body">
+      <span class="pf-stat-card__value" id="stat-validated">—</span>
+      <span class="pf-stat-card__label">Validated Profiles</span>
+    </div>
+  </div>
+
+  <div class="pf-stat-card">
+    <div class="pf-stat-card__icon pf-stat-card__icon--amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div class="pf-stat-card__body">
+      <span class="pf-stat-card__value" id="stat-avg-conf">—</span>
+      <span class="pf-stat-card__label">Avg. Confidence</span>
+    </div>
+  </div>
+
+  <div class="pf-stat-card">
+    <div class="pf-stat-card__icon pf-stat-card__icon--purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </div>
+    <div class="pf-stat-card__body">
+      <span class="pf-stat-card__value" id="stat-exports">—</span>
+      <span class="pf-stat-card__label">Exports</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Main grid ────────────────────────────────────────────── -->
+<div class="pf-dashboard-grid">
+
+  <!-- Quick Actions -->
+  <div class="pf-panel">
+    <div class="pf-panel__header">
+      <h3 class="pf-panel__title">Quick Actions</h3>
+    </div>
+    <div class="pf-panel__body">
+      <div class="pf-quick-actions">
+
+        <a href="/candidate" class="pf-quick-action">
+          <div class="pf-quick-action__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="pf-quick-action__body">
+            <strong>Single Candidate</strong>
+            <span>Upload CSV + PDF → get canonical profile</span>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="pf-quick-action__arrow">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </a>
+
+        <a href="#bulk" class="pf-quick-action pf-quick-action--disabled">
+          <div class="pf-quick-action__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div class="pf-quick-action__body">
+            <strong>Bulk Upload <span class="pf-badge pf-badge--soon">Soon</span></strong>
+            <span>Process multiple candidates at once</span>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="pf-quick-action__arrow">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </a>
+
+        <a href="/help" class="pf-quick-action">
+          <div class="pf-quick-action__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
+            </svg>
+          </div>
+          <div class="pf-quick-action__body">
+            <strong>Documentation</strong>
+            <span>Pipeline guide, CSV template, config reference</span>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="pf-quick-action__arrow">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </a>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline Overview -->
+  <div class="pf-panel">
+    <div class="pf-panel__header">
+      <h3 class="pf-panel__title">Pipeline Stages</h3>
+      <span class="pf-panel__badge">6 stages</span>
+    </div>
+    <div class="pf-panel__body">
+      <ol class="pf-pipeline-list">
+        <li class="pf-pipeline-step">
+          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
+          <div class="pf-pipeline-step__body">
+            <strong>Parse</strong>
+            <span>Extract raw data from CSV and PDF sources</span>
+          </div>
+        </li>
+        <li class="pf-pipeline-step">
+          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
+          <div class="pf-pipeline-step__body">
+            <strong>Normalise</strong>
+            <span>E.164 phones · ISO Alpha-2 · canonical skills · ISO 8601 dates</span>
+          </div>
+        </li>
+        <li class="pf-pipeline-step">
+          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
+          <div class="pf-pipeline-step__body">
+            <strong>Merge</strong>
+            <span>Deterministic priority merge — Resume &gt; CSV</span>
+          </div>
+        </li>
+        <li class="pf-pipeline-step">
+          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
+          <div class="pf-pipeline-step__body">
+            <strong>Confidence Scoring</strong>
+            <span>0.5 (single source) → 0.85 (dual) → 1.0 (triple)</span>
+          </div>
+        </li>
+        <li class="pf-pipeline-step">
+          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
+          <div class="pf-pipeline-step__body">
+            <strong>Validate</strong>
+            <span>Schema check · email format · E.164 phone · required fields</span>
+          </div>
+        </li>
+        <li class="pf-pipeline-step pf-pipeline-step--last">
+          <div class="pf-pipeline-step__dot pf-pipeline-step__dot--done"></div>
+          <div class="pf-pipeline-step__body">
+            <strong>Project</strong>
+            <span>Configurable output — include / exclude / rename fields</span>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Tech stack banner ─────────────────────────────────────── -->
+<div class="pf-tech-banner">
+  <span class="pf-tech-banner__label">Built with</span>
+  <div class="pf-tech-pills">
+    <span class="pf-tech-pill">FastAPI</span>
+    <span class="pf-tech-pill">Pydantic</span>
+    <span class="pf-tech-pill">pdfplumber</span>
+    <span class="pf-tech-pill">phonenumbers</span>
+    <span class="pf-tech-pill">pycountry</span>
+    <span class="pf-tech-pill">Gemini AI</span>
+    <span class="pf-tech-pill">Google OAuth</span>
+    <span class="pf-tech-pill">GitHub OAuth</span>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Animate stat counters — in a real app these would come from an API
+  function animateCount(id, target, suffix = "") {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let start = 0;
+    const step = Math.ceil(target / 30);
+    const timer = setInterval(() => {
+      start = Math.min(start + step, target);
+      el.textContent = start + suffix;
+      if (start >= target) clearInterval(timer);
+    }, 30);
+  }
+  // Session-based demo counts stored in localStorage
+  const runs = parseInt(localStorage.getItem("pf_runs") || "0");
+  animateCount("stat-profiles", runs);
+  animateCount("stat-validated", runs);
+  animateCount("stat-avg-conf", runs > 0 ? 82 : 0, "%");
+  animateCount("stat-exports", runs);
+</script>
+{% endblock %}

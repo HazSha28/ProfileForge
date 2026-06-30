@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}New Profile — ProfileForge{% endblock %}
+
+{% block breadcrumb %}
+<a href="/dashboard" class="pf-breadcrumb__item pf-breadcrumb__item--link">Dashboard</a>
+<span class="pf-breadcrumb__sep">›</span>
+<span class="pf-breadcrumb__item">New Profile</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Upload view ───────────────────────────────────────────── -->
+<div id="upload-view">
+
+  <div class="pf-page-header">
+    <h2 class="pf-page-header__title">Single Candidate Profile</h2>
+    <p class="pf-page-header__sub">
+      Upload a recruiter CSV and a resume PDF. ProfileForge merges, normalises,
+      and scores every field — producing one canonical profile.
+    </p>
+  </div>
+
+  <div class="pf-upload-grid">
+
+    <!-- Left: upload form -->
+    <div class="pf-panel">
+      <div class="pf-panel__header">
+        <h3 class="pf-panel__title">Upload Sources</h3>
+      </div>
+      <div class="pf-panel__body">
+
+        <form id="upload-form" novalidate>
+
+          <!-- CSV -->
+          <div class="pf-upload-field">
+            <label class="pf-upload-field__label">
+              <span class="pf-badge pf-badge--green">Structured</span>
+              Recruiter CSV
+            </label>
+            <div class="pf-drop-zone" id="csv-zone" data-target="csv-input">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" class="pf-drop-zone__icon">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                <path d="M14 2v6h6M8 13h8M8 17h5"/>
+              </svg>
+              <span class="pf-drop-zone__text">Drop CSV here or <span class="pf-link">browse</span></span>
+              <span class="pf-drop-zone__hint">.csv — recruiter spreadsheet</span>
+              <input type="file" id="csv-input" name="csv" accept=".csv" hidden />
+            </div>
+            <div class="pf-file-chip" id="csv-chip" hidden>
+              <span>📄</span>
+              <span class="pf-file-chip__name" id="csv-name"></span>
+              <button type="button" class="pf-file-chip__remove" data-clear="csv">✕</button>
+            </div>
+          </div>
+
+          <!-- PDF -->
+          <div class="pf-upload-field">
+            <label class="pf-upload-field__label">
+              <span class="pf-badge pf-badge--brown">Unstructured</span>
+              Resume PDF
+            </label>
+            <div class="pf-drop-zone" id="pdf-zone" data-target="pdf-input">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" class="pf-drop-zone__icon">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                <path d="M14 2v6h6"/>
+                <rect x="7" y="13" width="10" height="6" rx="1"/>
+              </svg>
+              <span class="pf-drop-zone__text">Drop PDF here or <span class="pf-link">browse</span></span>
+              <span class="pf-drop-zone__hint">.pdf — candidate resume</span>
+              <input type="file" id="pdf-input" name="resume" accept=".pdf" hidden />
+            </div>
+            <div class="pf-file-chip" id="pdf-chip" hidden>
+              <span>📋</span>
+              <span class="pf-file-chip__name" id="pdf-name"></span>
+              <button type="button" class="pf-file-chip__remove" data-clear="pdf">✕</button>
+            </div>
+          </div>
+
+          <!-- Platform links -->
+          <details class="pf-details" open>
+            <summary class="pf-details__toggle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+              Platform Links
+              <span class="pf-badge pf-badge--outline">Optional</span>
+            </summary>
+            <div class="pf-details__body">
+              <div class="pf-links-grid">
+                <div class="pf-link-field"><label>LinkedIn</label><input type="url" name="link_linkedin" placeholder="https://linkedin.com/in/username" /></div>
+                <div class="pf-link-field"><label>GitHub</label><input type="url" name="link_github" placeholder="https://github.com/username" /></div>
+                <div class="pf-link-field"><label>Portfolio</label><input type="url" name="link_portfolio" placeholder="https://yoursite.com" /></div>
+                <div class="pf-link-field"><label>LeetCode</label><input type="url" name="link_leetcode" placeholder="https://leetcode.com/username" /></div>
+                <div class="pf-link-field"><label>HackerRank</label><input type="url" name="link_hackerrank" placeholder="https://hackerrank.com/username" /></div>
+                <div class="pf-link-field"><label>Kaggle</label><input type="url" name="link_kaggle" placeholder="https://kaggle.com/username" /></div>
+              </div>
+            </div>
+          </details>
+
+          <!-- Config -->
+          <details class="pf-details">
+            <summary class="pf-details__toggle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.07 4.93A10 10 0 1 0 4.93 19.07"/>
+              </svg>
+              Output Config
+              <span class="pf-badge pf-badge--outline">Advanced</span>
+            </summary>
+            <div class="pf-details__body">
+              <textarea id="config-input" name="config" class="pf-textarea" rows="5"
+                placeholder='{"exclude": ["experience"], "rename": {"full_name": "name"}}'></textarea>
+            </div>
+          </details>
+
+          <div class="pf-error-banner" id="error-banner" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span id="error-text"></span>
+          </div>
+
+          <button type="submit" class="pf-btn pf-btn--primary pf-btn--full" id="submit-btn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span id="btn-label">Generate Profile</span>
+            <span id="btn-spinner" hidden>
+              <svg class="pf-spinner" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-dasharray="60" stroke-dashoffset="20"/>
+              </svg>
+            </span>
+          </button>
+
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Right: info panel -->
+    <div class="pf-panel pf-panel--info">
+      <div class="pf-panel__header">
+        <h3 class="pf-panel__title">What happens next</h3>
+      </div>
+      <div class="pf-panel__body">
+        <ol class="pf-info-steps">
+          <li><strong>CSV is parsed</strong> — recruiter data extracted with flexible column mapping</li>
+          <li><strong>PDF is parsed</strong> — AI or regex extracts name, contacts, skills, experience</li>
+          <li><strong>Data is normalised</strong> — phones → E.164, country → ISO Alpha-2, skills → canonical</li>
+          <li><strong>Records are merged</strong> — Resume wins over CSV; lists are unioned</li>
+          <li><strong>Confidence assigned</strong> — each field scored by how many sources agree</li>
+          <li><strong>Schema validated</strong> — required fields, email format, phone format checked</li>
+          <li><strong>Profile generated</strong> — canonical JSON with provenance on every field</li>
+        </ol>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Pipeline progress view ───────────────────────────────── -->
+<div id="pipeline-view" hidden>
+  <div class="pf-pipeline-screen">
+    <div class="pf-pipeline-screen__icon">
+      <svg class="pf-pipeline-screen__spinner" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="20" stroke="#d6cfc5" stroke-width="4"/>
+        <circle cx="24" cy="24" r="20" stroke="#6b3f1f" stroke-width="4"
+                stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60"/>
+      </svg>
+    </div>
+    <h2 class="pf-pipeline-screen__title">Processing Pipeline</h2>
+    <p class="pf-pipeline-screen__sub" id="pipeline-current-step">Initialising...</p>
+    <ol class="pf-pipeline-stages" id="pipeline-stages"></ol>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/candidate.js"></script>
+{% endblock %}

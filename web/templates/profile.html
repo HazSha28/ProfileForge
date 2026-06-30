@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Candidate Profile — ProfileForge{% endblock %}
+
+{% block breadcrumb %}
+<a href="/dashboard" class="pf-breadcrumb__item pf-breadcrumb__item--link">Dashboard</a>
+<span class="pf-breadcrumb__sep">›</span>
+<a href="/candidate" class="pf-breadcrumb__item pf-breadcrumb__item--link">New Profile</a>
+<span class="pf-breadcrumb__sep">›</span>
+<span class="pf-breadcrumb__item" id="profile-name-crumb">Profile</span>
+{% endblock %}
+
+{% block topbar_actions %}
+<button class="pf-btn pf-btn--outline pf-btn--sm" id="copy-btn">Copy JSON</button>
+<button class="pf-btn pf-btn--primary pf-btn--sm" id="download-btn">Download JSON</button>
+{% endblock %}
+
+{% block content %}
+
+<!-- No profile guard -->
+<div id="no-profile" hidden style="text-align:center;padding:80px 20px;">
+  <p style="color:var(--muted);margin-bottom:20px;">No profile data found.</p>
+  <a href="/candidate" class="pf-btn pf-btn--primary">← Upload a Candidate</a>
+</div>
+
+<!-- Profile content -->
+<div id="profile-content">
+
+  <!-- Hero banner -->
+  <div class="pf-profile-hero" id="profile-hero">
+    <div class="pf-profile-avatar" id="profile-avatar"></div>
+    <div style="flex:1">
+      <div class="pf-profile-hero__name" id="profile-name">—</div>
+      <div class="pf-profile-hero__headline" id="profile-headline">—</div>
+      <div class="pf-profile-hero__meta">
+        <span class="pf-profile-meta-item" id="profile-location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span></span>
+        </span>
+        <span class="pf-profile-meta-item" id="profile-exp">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+          <span></span>
+        </span>
+        <span class="pf-profile-meta-item" id="profile-id" style="font-size:.68rem;color:#4a6070;font-family:var(--mono)"></span>
+      </div>
+    </div>
+    <div class="pf-profile-hero__actions">
+      <a href="/candidate" class="pf-btn pf-btn--outline pf-btn--sm" style="color:#8fa3b8;border-color:#2a3f58;">← New Profile</a>
+    </div>
+  </div>
+
+  <!-- Warnings -->
+  <div id="warn-banner" hidden style="margin-bottom:20px;padding:12px 16px;background:rgba(176,125,32,.08);border:1px solid rgba(176,125,32,.25);border-radius:var(--radius-sm);font-size:.85rem;color:var(--amber);">
+    <strong>Validation warnings:</strong>
+    <ul id="warn-list" style="margin:6px 0 0 18px;"></ul>
+  </div>
+
+  <!-- View tabs -->
+  <div style="display:flex;gap:6px;margin-bottom:20px;">
+    <button class="pf-view-tab pf-view-tab--active" data-view="formatted">Formatted View</button>
+    <button class="pf-view-tab" data-view="json">JSON View</button>
+  </div>
+
+  <!-- Formatted view -->
+  <div id="view-formatted">
+    <div class="pf-profile-grid">
+
+      <!-- Left column -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Skills -->
+        <div class="pf-panel">
+          <div class="pf-panel__header">
+            <h3 class="pf-panel__title">Skills</h3>
+            <span class="pf-panel__badge" id="skills-conf-badge"></span>
+          </div>
+          <div class="pf-panel__body">
+            <div class="pf-tags" id="skills-tags"></div>
+            <div class="pf-field-card__footer" style="margin-top:12px;">
+              <div class="pf-conf">
+                <div class="pf-conf__bar"><div class="pf-conf__fill" id="skills-conf-fill"></div></div>
+                <span class="pf-conf__label" id="skills-conf-label"></span>
+              </div>
+              <div class="pf-sources" id="skills-sources"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Experience timeline -->
+        <div class="pf-panel">
+          <div class="pf-panel__header"><h3 class="pf-panel__title">Experience</h3></div>
+          <div class="pf-panel__body">
+            <div class="pf-timeline" id="experience-timeline"></div>
+          </div>
+        </div>
+
+        <!-- Contact details -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="pf-field-card" id="emails-card"></div>
+          <div class="pf-field-card" id="phones-card"></div>
+        </div>
+
+      </div>
+
+      <!-- Right column -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Confidence overview -->
+        <div class="pf-panel">
+          <div class="pf-panel__header"><h3 class="pf-panel__title">Confidence Overview</h3></div>
+          <div class="pf-panel__body">
+            <div id="confidence-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+        </div>
+
+        <!-- Location & Links -->
+        <div class="pf-field-card" id="location-card"></div>
+        <div class="pf-field-card" id="links-card"></div>
+
+        <!-- All other fields -->
+        <div id="other-fields" style="display:flex;flex-direction:column;gap:12px;"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON view -->
+  <div id="view-json" hidden>
+    <div class="pf-panel">
+      <div class="pf-panel__header">
+        <h3 class="pf-panel__title">Raw JSON Output</h3>
+        <button class="pf-btn pf-btn--outline pf-btn--sm" id="copy-btn-2">Copy</button>
+      </div>
+      <div class="pf-panel__body" style="padding:0;">
+        <pre class="pf-raw-json" id="raw-json"></pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/profile.js"></script>
+{% endblock %}

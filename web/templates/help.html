@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProfileForge — Help & Documentation</title>
+  <link rel="icon" type="image/png" href="/static/img/logo.png" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/help.css" />
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header__inner">
+      <div class="header__brand">
+        <img src="/static/img/logo.png" alt="ProfileForge logo" class="header__logo" />
+        <span class="header__subtitle">Candidate Data Transformer</span>
+      </div>
+      <nav class="header__nav">
+        <a href="/" class="header__nav-link">App</a>
+        <a href="/help" class="header__nav-link header__nav-link--active">Help</a>
+        <a href="/login" class="header__nav-link header__nav-link--btn">Sign In</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="help-layout">
+
+    <!-- ── Sidebar ────────────────────────────────────────────── -->
+    <aside class="help-sidebar">
+      <nav class="help-nav">
+        <p class="help-nav__section">Getting Started</p>
+        <a href="#overview"     class="help-nav__link help-nav__link--active">Overview</a>
+        <a href="#quickstart"   class="help-nav__link">Quick Start</a>
+
+        <p class="help-nav__section">Input Sources</p>
+        <a href="#csv-source"   class="help-nav__link">Recruiter CSV</a>
+        <a href="#pdf-source"   class="help-nav__link">Resume PDF</a>
+        <a href="#platform-links" class="help-nav__link">Platform Links</a>
+
+        <p class="help-nav__section">Pipeline</p>
+        <a href="#normalisation" class="help-nav__link">Normalisation</a>
+        <a href="#merging"       class="help-nav__link">Merge Policy</a>
+        <a href="#confidence"    class="help-nav__link">Confidence Scores</a>
+        <a href="#provenance"    class="help-nav__link">Provenance</a>
+
+        <p class="help-nav__section">Output</p>
+        <a href="#output-schema" class="help-nav__link">Output Schema</a>
+        <a href="#config"        class="help-nav__link">Config File</a>
+        <a href="#validation"    class="help-nav__link">Validation</a>
+
+        <p class="help-nav__section">Reference</p>
+        <a href="#csv-template"  class="help-nav__link">CSV Template</a>
+        <a href="#skills-map"    class="help-nav__link">Skills Aliases</a>
+        <a href="#faq"           class="help-nav__link">FAQ</a>
+      </nav>
+    </aside>
+
+    <!-- ── Content ────────────────────────────────────────────── -->
+    <main class="help-content">
+
+      <!-- ── Overview ───────────────────────────────────────── -->
+      <section class="help-section" id="overview">
+        <div class="help-section__badge">Getting Started</div>
+        <h1 class="help-h1">ProfileForge Documentation</h1>
+        <p class="help-lead">
+          ProfileForge merges heterogeneous candidate data from multiple sources into
+          a single, validated, canonical JSON profile — with full provenance tracking
+          and deterministic confidence scoring on every field.
+        </p>
+
+        <div class="help-cards">
+          <div class="help-card help-card--navy">
+            <div class="help-card__icon">📥</div>
+            <div class="help-card__text">
+              <strong>Input</strong>
+              Recruiter CSV + Resume PDF + optional platform links
+            </div>
+          </div>
+          <div class="help-card help-card--brown">
+            <div class="help-card__icon">⚙️</div>
+            <div class="help-card__text">
+              <strong>Pipeline</strong>
+              Parse → Normalise → Merge → Score → Validate → Project
+            </div>
+          </div>
+          <div class="help-card help-card--green">
+            <div class="help-card__icon">📤</div>
+            <div class="help-card__text">
+              <strong>Output</strong>
+              Structured JSON with sources and confidence per field
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Quick Start ─────────────────────────────────────── -->
+      <section class="help-section" id="quickstart">
+        <h2 class="help-h2">Quick Start</h2>
+        <p>Follow these three steps to generate your first canonical profile.</p>
+
+        <ol class="help-steps">
+          <li class="help-step">
+            <div class="help-step__num">1</div>
+            <div class="help-step__body">
+              <strong>Upload a Recruiter CSV</strong>
+              <p>Prepare a CSV file with candidate details. The column names are flexible —
+              see the <a href="#csv-template" class="help-link">CSV Template</a> section for
+              the supported column names.</p>
+            </div>
+          </li>
+          <li class="help-step">
+            <div class="help-step__num">2</div>
+            <div class="help-step__body">
+              <strong>Upload a Resume PDF</strong>
+              <p>Upload the candidate's resume as a PDF. ProfileForge uses pattern recognition
+              to extract name, contact details, skills, and work experience from unstructured text.</p>
+            </div>
+          </li>
+          <li class="help-step">
+            <div class="help-step__num">3</div>
+            <div class="help-step__body">
+              <strong>Add Platform Links (Optional)</strong>
+              <p>Expand the <em>Candidate Platform Links</em> section and paste any known
+              profile URLs — LinkedIn, GitHub, portfolio, LeetCode, and more.</p>
+            </div>
+          </li>
+          <li class="help-step">
+            <div class="help-step__num">4</div>
+            <div class="help-step__body">
+              <strong>Click Transform Profile</strong>
+              <p>The pipeline runs in seconds. Review the canonical profile on screen,
+              then download the JSON or copy it directly.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── CSV Source ──────────────────────────────────────── -->
+      <section class="help-section" id="csv-source">
+        <h2 class="help-h2">Recruiter CSV</h2>
+        <p>The CSV is the <strong>structured source</strong>. It should contain one row per candidate.
+        Column names are matched case-insensitively and support common aliases.</p>
+
+        <div class="help-table-wrap" id="csv-template">
+          <table class="help-table">
+            <thead>
+              <tr>
+                <th>Canonical Field</th>
+                <th>Accepted Column Names</th>
+                <th>Example Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>full_name</td><td>full_name, name, candidate_name</td><td>Jane Doe</td></tr>
+              <tr><td>email</td><td>email, email_address, e-mail</td><td>jane@example.com</td></tr>
+              <tr><td>phone</td><td>phone, mobile, telephone</td><td>(415) 555-2671</td></tr>
+              <tr><td>city</td><td>city</td><td>San Francisco</td></tr>
+              <tr><td>region</td><td>region, state, province</td><td>CA</td></tr>
+              <tr><td>country</td><td>country</td><td>United States</td></tr>
+              <tr><td>linkedin</td><td>linkedin, linkedin_url</td><td>linkedin.com/in/janedoe</td></tr>
+              <tr><td>years_experience</td><td>years_experience, experience_years</td><td>5</td></tr>
+              <tr><td>skills</td><td>skills, skill_set, technologies</td><td>Python, SQL, Docker</td></tr>
+              <tr><td>timestamp</td><td>timestamp, date, updated_at</td><td>2024-01-15</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="help-callout help-callout--info">
+          <strong>Multiple values:</strong> Skills and emails can be comma-separated or
+          semicolon-separated within a single cell. Example: <code>Python, JavaScript; SQL</code>
+        </div>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── PDF Source ──────────────────────────────────────── -->
+      <section class="help-section" id="pdf-source">
+        <h2 class="help-h2">Resume PDF</h2>
+        <p>The PDF is the <strong>unstructured source</strong>. ProfileForge extracts text from
+        every page and uses pattern matching to locate fields.</p>
+
+        <div class="help-table-wrap">
+          <table class="help-table">
+            <thead>
+              <tr><th>Field</th><th>Extraction Method</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Name</td><td>First non-contact line heuristic</td><td>Works best when name is on line 1</td></tr>
+              <tr><td>Email</td><td>RFC 5321 regex</td><td>All emails found are captured</td></tr>
+              <tr><td>Phone</td><td>International phone regex</td><td>Validated via libphonenumber</td></tr>
+              <tr><td>LinkedIn / GitHub</td><td>URL pattern matching</td><td>First match per platform</td></tr>
+              <tr><td>Skills</td><td>Skills section detection</td><td>Comma, pipe, bullet delimiters</td></tr>
+              <tr><td>Experience</td><td>Date range pattern (Mon YYYY – Mon YYYY)</td><td>Title/company from surrounding context</td></tr>
+              <tr><td>Years Experience</td><td>Derived from date range span</td><td>Falls back to "X years of experience" pattern</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="help-callout help-callout--warn">
+          <strong>Tip:</strong> PDF extraction quality depends on the resume layout.
+          Text-based PDFs work best. Scanned image PDFs are not supported.
+        </div>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Platform Links ──────────────────────────────────── -->
+      <section class="help-section" id="platform-links">
+        <h2 class="help-h2">Platform Links</h2>
+        <p>The recruiter can manually supply profile URLs that may not appear in the CSV or PDF.
+        These are injected into the pipeline as part of the CSV record and flow through
+        the full merge and validation process.</p>
+
+        <div class="help-pills">
+          <span class="help-pill">LinkedIn</span>
+          <span class="help-pill">GitHub</span>
+          <span class="help-pill">Portfolio</span>
+          <span class="help-pill">LeetCode</span>
+          <span class="help-pill">HackerRank</span>
+          <span class="help-pill">Stack Overflow</span>
+          <span class="help-pill">X / Twitter</span>
+          <span class="help-pill">Kaggle</span>
+        </div>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Normalisation ───────────────────────────────────── -->
+      <section class="help-section" id="normalisation">
+        <h2 class="help-h2">Normalisation</h2>
+        <p>Before merging, every field is normalised to a canonical form.</p>
+
+        <div class="help-table-wrap">
+          <table class="help-table">
+            <thead>
+              <tr><th>Field</th><th>Rule</th><th>Example</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Phone</td><td>E.164 format via libphonenumber</td><td><code>(415) 555-2671</code> → <code>+14155552671</code></td></tr>
+              <tr><td>Email</td><td>Lowercase</td><td><code>Jane@EXAMPLE.com</code> → <code>jane@example.com</code></td></tr>
+              <tr><td>Name</td><td>Title case</td><td><code>JOHN DOE</code> → <code>John Doe</code></td></tr>
+              <tr><td>Country</td><td>ISO Alpha-2 via pycountry</td><td><code>United States</code> → <code>US</code></td></tr>
+              <tr><td>Skills</td><td>Alias map to canonical name</td><td><code>JS</code> → <code>JavaScript</code></td></tr>
+              <tr><td>Dates</td><td>ISO 8601 (YYYY-MM-DD)</td><td><code>Jan 2022</code> → <code>2022-01-01</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Merge Policy ────────────────────────────────────── -->
+      <section class="help-section" id="merging">
+        <h2 class="help-h2">Merge Policy</h2>
+        <p>When both sources provide a value for the same field, a deterministic policy decides the winner. There is no random behaviour.</p>
+
+        <div class="help-table-wrap">
+          <table class="help-table">
+            <thead>
+              <tr><th>Field Type</th><th>Rule</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Scalar (name, headline, years)</td>
+                <td>Resume wins over CSV. If timestamps are available, the newest value wins regardless of source.</td>
+              </tr>
+              <tr>
+                <td>Lists (emails, phones, skills)</td>
+                <td>Deduplicated union of all sources. Order follows source priority (Resume first).</td>
+              </tr>
+              <tr>
+                <td>Nested (location, links)</td>
+                <td>Each sub-field merged independently using the scalar rule.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="help-callout help-callout--info">
+          <strong>Priority order:</strong> Resume &gt; CSV &gt; LinkedIn (if added in future)
+        </div>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Confidence ──────────────────────────────────────── -->
+      <section class="help-section" id="confidence">
+        <h2 class="help-h2">Confidence Scores</h2>
+        <p>Every field carries a confidence score from <code>0.0</code> to <code>1.0</code> based on how many sources contributed to it.</p>
+
+        <div class="help-table-wrap">
+          <table class="help-table">
+            <thead>
+              <tr><th>Sources</th><th>Score</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Resume only</td><td><span class="help-score help-score--med">0.6</span></td><td>Candidate-authored, single source</td></tr>
+              <tr><td>CSV only</td><td><span class="help-score help-score--low">0.5</span></td><td>Recruiter-supplied, single source</td></tr>
+              <tr><td>Resume + CSV</td><td><span class="help-score help-score--high">0.85</span></td><td>Cross-verified by two sources</td></tr>
+              <tr><td>Resume + CSV + LinkedIn</td><td><span class="help-score help-score--max">1.0</span></td><td>Triple-verified, fully trusted</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Provenance ──────────────────────────────────────── -->
+      <section class="help-section" id="provenance">
+        <h2 class="help-h2">Provenance</h2>
+        <p>Every field in the output records which source(s) it came from in a <code>sources</code> array.</p>
+        <pre class="help-code">{
+  "skills": {
+    "value": ["Python", "JavaScript", "Docker"],
+    "sources": ["Resume", "CSV"],
+    "confidence": 0.85
+  }
+}</pre>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Output Schema ───────────────────────────────────── -->
+      <section class="help-section" id="output-schema">
+        <h2 class="help-h2">Output Schema</h2>
+        <p>The canonical profile JSON has the following top-level structure. Each field is wrapped with <code>value</code>, <code>sources</code>, and <code>confidence</code>.</p>
+        <pre class="help-code">{
+  "candidate_id": "uuid-v4",
+  "full_name":        { "value": "Jane Doe",      "sources": ["Resume","CSV"], "confidence": 0.85 },
+  "emails":           { "value": ["jane@..."],     "sources": ["Resume"],      "confidence": 0.6  },
+  "phones":           { "value": ["+14155552671"], "sources": ["CSV"],         "confidence": 0.5  },
+  "location":         { "value": { "city": "San Francisco", "region": "CA", "country": "US" }, ... },
+  "links":            { "value": { "linkedin": "...", "github": "..." }, ... },
+  "headline":         { "value": "Senior Software Engineer", ... },
+  "years_experience": { "value": 5, ... },
+  "skills":           { "value": ["Python", "JavaScript"], ... },
+  "experience":       { "value": [ { "title": "...", "company": "...", "start_date": "...", "end_date": "..." } ], ... }
+}</pre>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Config ──────────────────────────────────────────── -->
+      <section class="help-section" id="config">
+        <h2 class="help-h2">Config File</h2>
+        <p>Paste a JSON config in the <em>Advanced</em> section to control the output shape without changing any code.</p>
+
+        <div class="help-table-wrap">
+          <table class="help-table">
+            <thead>
+              <tr><th>Key</th><th>Type</th><th>Effect</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>include</code></td><td>array of strings</td><td>Only output the listed fields</td></tr>
+              <tr><td><code>exclude</code></td><td>array of strings</td><td>Remove these fields from output</td></tr>
+              <tr><td><code>rename</code></td><td>object</td><td>Rename a field key in the output</td></tr>
+              <tr><td><code>missing_value</code></td><td>any</td><td>Substitute this value for null fields</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <pre class="help-code">{
+  "exclude": ["experience"],
+  "rename":  { "full_name": "name" },
+  "missing_value": "N/A"
+}</pre>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Validation ──────────────────────────────────────── -->
+      <section class="help-section" id="validation">
+        <h2 class="help-h2">Validation</h2>
+        <p>Before writing the output, the validator checks every field. Warnings are shown in the results panel — the pipeline never crashes on bad data.</p>
+
+        <div class="help-table-wrap">
+          <table class="help-table">
+            <thead>
+              <tr><th>Check</th><th>Rule</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Required fields</td><td><code>full_name</code> must be present and non-null</td></tr>
+              <tr><td>Email format</td><td>Must match RFC 5321 pattern</td></tr>
+              <tr><td>Phone format</td><td>Must be E.164 format</td></tr>
+              <tr><td>Years experience</td><td>Must be a number in range [0, 60]</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── Skills Aliases ──────────────────────────────────── -->
+      <section class="help-section" id="skills-map">
+        <h2 class="help-h2">Skills Aliases</h2>
+        <p>The following common aliases are automatically mapped to canonical skill names.</p>
+
+        <div class="help-pills">
+          <span class="help-pill">JS → JavaScript</span>
+          <span class="help-pill">java script → JavaScript</span>
+          <span class="help-pill">TS → TypeScript</span>
+          <span class="help-pill">py → Python</span>
+          <span class="help-pill">node → Node.js</span>
+          <span class="help-pill">nodejs → Node.js</span>
+          <span class="help-pill">reactjs → React</span>
+          <span class="help-pill">postgres → PostgreSQL</span>
+          <span class="help-pill">mongo → MongoDB</span>
+          <span class="help-pill">k8s → Kubernetes</span>
+          <span class="help-pill">sklearn → scikit-learn</span>
+          <span class="help-pill">golang → Go</span>
+          <span class="help-pill">csharp → C#</span>
+          <span class="help-pill">cpp → C++</span>
+        </div>
+      </section>
+
+      <hr class="help-divider" />
+
+      <!-- ── FAQ ────────────────────────────────────────────────── -->
+      <section class="help-section" id="faq">
+        <h2 class="help-h2">FAQ</h2>
+
+        <div class="help-faq">
+          <details class="help-faq__item">
+            <summary>What happens if my CSV uses different column names?</summary>
+            <p>ProfileForge uses a flexible alias map. Common variations like <code>mobile</code>, <code>telephone</code>, <code>e-mail</code>, and <code>state</code> are all recognised. If your column still isn't matched, check the CSV Template table above.</p>
+          </details>
+          <details class="help-faq__item">
+            <summary>What encoding should my CSV be saved in?</summary>
+            <p>Any encoding works. ProfileForge automatically tries UTF-8, UTF-8 with BOM, Windows-1252 (cp1252), and Latin-1 — so files exported from Excel are handled correctly.</p>
+          </details>
+          <details class="help-faq__item">
+            <summary>Does the PDF parser work with scanned resumes?</summary>
+            <p>No. Scanned PDFs are images and contain no extractable text. The resume must be a text-based PDF (the kind you can highlight and copy text from).</p>
+          </details>
+          <details class="help-faq__item">
+            <summary>Why is a field showing confidence 0.5 instead of 0.85?</summary>
+            <p>Confidence 0.5 means the field came from the CSV only. If the same field was also found on the resume, it would score 0.85. Check that the resume PDF contains the relevant information in a parseable format.</p>
+          </details>
+          <details class="help-faq__item">
+            <summary>Can I add my own skill aliases?</summary>
+            <p>Yes. Open <code>src/normalizers/skills.py</code> and add entries to the <code>SKILL_ALIASES</code> dictionary. The key is any lowercase alias, the value is the canonical display name.</p>
+          </details>
+          <details class="help-faq__item">
+            <summary>How do I control which fields appear in the output?</summary>
+            <p>Paste a config JSON in the <em>Advanced</em> section. Use <code>include</code> to whitelist fields, <code>exclude</code> to remove fields, and <code>rename</code> to change key names. See the <a href="#config" class="help-link">Config File</a> section for examples.</p>
+          </details>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────────────── -->
+  <footer class="footer">
+    ProfileForge · Multi-Source Candidate Data Transformer
+  </footer>
+
+  <script src="/static/js/help.js"></script>
+</body>
+</html>

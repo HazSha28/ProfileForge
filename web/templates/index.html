@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProfileForge — Candidate Data Transformer</title>
+  <link rel="icon" type="image/png" href="/static/img/logo.png" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header__inner">
+      <div class="header__brand">
+        <img
+          src="/static/img/logo.png"
+          alt="ProfileForge logo"
+          class="header__logo"
+        />
+        <span class="header__subtitle">Candidate Data Transformer</span>
+      </div>
+      <nav class="header__nav">
+        <a href="/" class="header__nav-link header__nav-link--active">App</a>
+        <a href="/help" class="header__nav-link">Help</a>
+        <a href="/login" class="header__nav-link header__nav-link--btn">Sign In</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ── Main ───────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Upload card -->
+    <section class="card upload-card" id="upload-section">
+      <h2 class="card__heading">Transform a Candidate Profile</h2>
+      <p class="card__desc">
+        Upload a recruiter CSV and a resume PDF. ProfileForge merges,
+        normalises, and scores every field — producing one canonical profile.
+      </p>
+
+      <form id="upload-form" novalidate>
+
+        <!-- CSV drop zone -->
+        <div class="field">
+          <label class="field__label" for="csv-input">
+            <span class="badge badge--green">Structured</span> Recruiter CSV
+          </label>
+          <div class="drop-zone" id="csv-zone" data-target="csv-input">
+            <svg class="drop-zone__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
+                    stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor"
+                    stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="drop-zone__text">Drop CSV here or <span class="link">browse</span></span>
+            <span class="drop-zone__hint">.csv files only</span>
+            <input type="file" id="csv-input" name="csv" accept=".csv" hidden />
+          </div>
+          <div class="file-chip" id="csv-chip" hidden>
+            <span class="file-chip__icon">📄</span>
+            <span class="file-chip__name" id="csv-name"></span>
+            <button type="button" class="file-chip__remove" data-clear="csv">✕</button>
+          </div>
+        </div>
+
+        <!-- PDF drop zone -->
+        <div class="field">
+          <label class="field__label" for="pdf-input">
+            <span class="badge badge--purple">Unstructured</span> Resume PDF
+          </label>
+          <div class="drop-zone" id="pdf-zone" data-target="pdf-input">
+            <svg class="drop-zone__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
+                    stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M14 2v6h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <rect x="7" y="13" width="10" height="6" rx="1"
+                    stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+            <span class="drop-zone__text">Drop PDF here or <span class="link">browse</span></span>
+            <span class="drop-zone__hint">.pdf files only</span>
+            <input type="file" id="pdf-input" name="resume" accept=".pdf" hidden />
+          </div>
+          <div class="file-chip" id="pdf-chip" hidden>
+            <span class="file-chip__icon">📋</span>
+            <span class="file-chip__name" id="pdf-name"></span>
+            <button type="button" class="file-chip__remove" data-clear="pdf">✕</button>
+          </div>
+        </div>
+
+        <!-- Platform links -->
+        <details class="platform-links" id="platform-links-section" open>
+          <summary class="platform-links__toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" aria-hidden="true">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            Candidate Platform Links
+            <span class="platform-links__badge">Optional</span>
+          </summary>
+          <div class="platform-links__body">
+            <p class="platform-links__desc">
+              Add any profile URLs you have for this candidate. These will be merged
+              into the canonical profile with full provenance tracking.
+            </p>
+
+            <div class="links-grid">
+
+              <!-- LinkedIn -->
+              <div class="link-field">
+                <label class="link-field__label" for="link-linkedin">
+                  <svg class="link-field__icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/>
+                    <circle cx="4" cy="4" r="2"/>
+                  </svg>
+                  LinkedIn
+                </label>
+                <input class="link-input" type="url" id="link-linkedin"
+                       name="link_linkedin"
+                       placeholder="https://linkedin.com/in/username" />
+              </div>
+
+              <!-- GitHub -->
+              <div class="link-field">
+                <label class="link-field__label" for="link-github">
+                  <svg class="link-field__icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                    <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.164 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.026A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.295 2.747-1.026 2.747-1.026.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                  </svg>
+                  GitHub
+                </label>
+                <input class="link-input" type="url" id="link-github"
+                       name="link_github"
+                       placeholder="https://github.com/username" />
+              </div>
+
+              <!-- Portfolio -->
+              <div class="link-field">
+                <label class="link-field__label" for="link-portfolio">
+                  <svg class="link-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                    <path d="M8 21h8M12 17v4"/>
+                  </svg>
+                  Portfolio
+                </label>
+                <input class="link-input" type="url" id="link-portfolio"
+                       name="link_portfolio"
+                       placeholder="https://yourportfolio.com" />
+              </div>
+
+              <!-- LeetCode -->
+              <div class="link-field">
+                <label class="link-field__label" for="link-leetcode">
+                  <svg class="link-field__icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                    <path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414.003-1.955a1.378 1.378 0 0 0-1.951-.003l-2.396 2.392a3.021 3.021 0 0 1-4.205.038l-.02-.019-4.276-4.193c-.652-.64-.972-1.469-.948-2.263a2.68 2.68 0 0 1 .066-.523 2.545 2.545 0 0 1 .619-1.164L9.13 8.114c1.058-1.134 3.204-1.27 4.43-.278l3.501 2.831c.593.48 1.461.387 1.94-.207a1.384 1.384 0 0 0-.207-1.943l-3.5-2.831c-.8-.647-1.766-1.045-2.774-1.202l2.015-2.158A1.384 1.384 0 0 0 13.483 0z"/>
+                  </svg>
+                  LeetCode
+                </label>
+                <input class="link-input" type="url" id="link-leetcode"
+                       name="link_leetcode"
+                       placeholder="https://leetcode.com/username" />
+              </div>
+
+              <!-- HackerRank -->
+              <div class="link-field">
+                <label class="link-field__label" for="link-hackerrank">
+                  <svg class="link-field__icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                    <path d="M12 0c1.285 0 9.75 4.886 10.392 6 .645 1.115.645 10.885 0 12S13.287 24 12 24s-9.75-4.885-10.392-6c-.645-1.115-.645-10.885 0-12C2.25 4.886 10.715 0 12 0zm2.295 6.799c-.141 0-.258.115-.258.258v3.875H9.963V7.057c0-.143-.115-.258-.258-.258H8.963a.258.258 0 0 0-.258.258v9.887c0 .143.115.258.258.258h.742c.143 0 .258-.115.258-.258v-4.104h4.074v4.104c0 .143.115.258.258.258h.742c.143 0 .258-.115.258-.258V7.057a.258.258 0 0 0-.258-.258h-.742z"/>
+                  </svg>
+                  HackerRank
+                </label>
+                <input class="link-input" type="url" id="link-hackerrank"
+                       name="link_hackerrank"
+                       placeholder="https://hackerrank.com/username" />
+              </div>
+
+              <!-- Stack Overflow -->
+              <div class="link-field">
+                <label class="link-field__label" for="link-stackoverflow">
+                  <svg class="link-field__icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                    <path d="M18.986 21.865v-6.404h2.134V24H1.844v-8.539h2.13v6.404h15.012zM6.111 19.731H17.78v-2.137H6.111v2.137zm.259-4.852 11.415 2.389.451-2.07-11.418-2.38-.448 2.061zm1.359-5.056 10.59 4.935.851-1.898-10.586-4.938-.855 1.901zm2.752-4.785 8.874 7.235 1.358-1.669-8.875-7.23-1.357 1.664zM15.5 0l-1.666 1.359 6.948 8.538 1.666-1.359L15.5 0z"/>
+                  </svg>
+                  Stack Overflow
+                </label>
+                <input class="link-input" type="url" id="link-stackoverflow"
+                       name="link_stackoverflow"
+                       placeholder="https://stackoverflow.com/users/id" />
+              </div>
+
+              <!-- Twitter / X -->
+              <div class="link-field">
+                <label class="link-field__label" for="link-twitter">
+                  <svg class="link-field__icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                  X / Twitter
+                </label>
+                <input class="link-input" type="url" id="link-twitter"
+                       name="link_twitter"
+                       placeholder="https://x.com/username" />
+              </div>
+
+              <!-- Kaggle -->
+              <div class="link-field">
+                <label class="link-field__label" for="link-kaggle">
+                  <svg class="link-field__icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                    <path d="M18.825 23.859c-.022.092-.117.141-.281.141h-3.139c-.187 0-.351-.082-.492-.248l-5.178-6.589-1.448 1.374v5.111c0 .235-.117.352-.351.352H5.505c-.236 0-.354-.117-.354-.352V.353c0-.233.118-.353.354-.353h2.431c.234 0 .351.12.351.353v14.343l6.203-6.272c.165-.165.33-.246.495-.246h3.239c.144 0 .236.06.285.18.046.149.034.255-.036.315l-6.555 6.344 6.836 8.507c.095.104.117.208.07.334z"/>
+                  </svg>
+                  Kaggle
+                </label>
+                <input class="link-input" type="url" id="link-kaggle"
+                       name="link_kaggle"
+                       placeholder="https://kaggle.com/username" />
+              </div>
+
+            </div><!-- /.links-grid -->
+          </div><!-- /.platform-links__body -->
+        </details>
+
+        <!-- Advanced config -->
+        <details class="advanced">
+          <summary class="advanced__toggle">Advanced — Output config (optional)</summary>
+          <div class="advanced__body">
+            <label class="field__label" for="config-input">
+              Paste a <code>config.json</code> to control field inclusion, renaming, and missing values.
+            </label>
+            <textarea
+              id="config-input"
+              name="config"
+              class="textarea"
+              rows="6"
+              placeholder='{"exclude": ["experience"], "rename": {"full_name": "name"}}'
+            ></textarea>
+          </div>
+        </details>
+
+        <button type="submit" class="btn btn--primary" id="submit-btn" disabled>
+          <span class="btn__label">Transform Profile</span>
+          <span class="btn__spinner" hidden>
+            <svg class="spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" stroke="currentColor"
+                      stroke-width="3" stroke-linecap="round" stroke-dasharray="60" stroke-dashoffset="20"/>
+            </svg>
+          </span>
+        </button>
+
+      </form>
+    </section>
+
+    <!-- Error banner -->
+    <div class="alert alert--error" id="error-banner" hidden role="alert">
+      <strong>Error:</strong> <span id="error-text"></span>
+    </div>
+
+    <!-- Results card -->
+    <section class="card results-card" id="results-section" hidden>
+
+      <!-- Header row -->
+      <div class="results-header">
+        <div>
+          <h2 class="card__heading" style="margin-bottom:4px">Canonical Profile</h2>
+          <p class="card__desc" id="results-subtitle"></p>
+        </div>
+        <div class="results-actions">
+          <button class="btn btn--outline btn--sm" id="copy-btn">Copy JSON</button>
+          <button class="btn btn--outline btn--sm" id="download-btn">Download JSON</button>
+          <button class="btn btn--ghost btn--sm" id="reset-btn">← New file</button>
+        </div>
+      </div>
+
+      <!-- Warnings -->
+      <div class="alert alert--warn" id="warn-banner" hidden role="alert">
+        <strong>Validation warnings:</strong>
+        <ul id="warn-list" class="warn-list"></ul>
+      </div>
+
+      <!-- Profile overview tiles -->
+      <div class="overview" id="overview"></div>
+
+      <!-- Field cards grid -->
+      <div class="fields-grid" id="fields-grid"></div>
+
+      <!-- Raw JSON toggle -->
+      <details class="raw-toggle">
+        <summary>View raw JSON output</summary>
+        <pre class="raw-json" id="raw-json"></pre>
+      </details>
+
+    </section>
+
+  </main>
+
+  <!-- ── Footer ─────────────────────────────────────────────── -->
+  <footer class="footer">
+    ProfileForge · Multi-Source Candidate Data Transformer
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

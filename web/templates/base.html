@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}ProfileForge{% endblock %}</title>
+  <link rel="icon" type="image/png" href="/static/img/logo.png" />
+  <link rel="stylesheet" href="/static/css/design.css" />
+  {% block head %}{% endblock %}
+</head>
+<body class="pf-body">
+
+  <!-- ── Sidebar Navigation ───────────────────────────────────── -->
+  <aside class="pf-sidebar" id="sidebar">
+    <div class="pf-sidebar__brand">
+      <img src="/static/img/logo.png" alt="ProfileForge" class="pf-sidebar__logo" />
+    </div>
+
+    <nav class="pf-sidebar__nav">
+      <a href="/dashboard" class="pf-nav-item {% if active_page == 'dashboard' %}pf-nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pf-nav-item__icon">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="/candidate" class="pf-nav-item {% if active_page == 'candidate' %}pf-nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pf-nav-item__icon">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>New Profile</span>
+      </a>
+
+      <a href="#" class="pf-nav-item {% if active_page == 'bulk' %}pf-nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pf-nav-item__icon">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Bulk Upload</span>
+        <span class="pf-badge pf-badge--soon">Soon</span>
+      </a>
+
+      <div class="pf-nav-divider"></div>
+
+      <a href="/help" class="pf-nav-item {% if active_page == 'help' %}pf-nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pf-nav-item__icon">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
+        </svg>
+        <span>Help</span>
+      </a>
+
+      <a href="#" class="pf-nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pf-nav-item__icon">
+          <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 1 0 4.93 19.07"/>
+        </svg>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <div class="pf-sidebar__footer">
+      {% if user %}
+      <div class="pf-user-chip">
+        {% if user.avatar %}
+        <img src="{{ user.avatar }}" alt="{{ user.name }}" class="pf-user-chip__avatar" />
+        {% else %}
+        <div class="pf-user-chip__initials">{{ user.name[:1] | upper }}</div>
+        {% endif %}
+        <div class="pf-user-chip__info">
+          <span class="pf-user-chip__name">{{ user.name }}</span>
+          <span class="pf-user-chip__email">{{ user.email }}</span>
+        </div>
+        <a href="/auth/logout" class="pf-user-chip__logout" title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
+        </a>
+      </div>
+      {% else %}
+      <a href="/login" class="pf-btn pf-btn--primary pf-btn--sm" style="width:100%;justify-content:center;">Sign In</a>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- ── Main Content ─────────────────────────────────────────── -->
+  <div class="pf-main">
+
+    <!-- Top bar -->
+    <header class="pf-topbar">
+      <button class="pf-topbar__menu" id="sidebar-toggle" aria-label="Toggle menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="pf-topbar__breadcrumb">
+        {% block breadcrumb %}<span>ProfileForge</span>{% endblock %}
+      </div>
+      <div class="pf-topbar__actions">
+        {% block topbar_actions %}{% endblock %}
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <main class="pf-page">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script src="/static/js/base.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "exclude": [],
+  "rename": {
+    "full_name": "name"
+  },
+  "missing_value": null
+}
