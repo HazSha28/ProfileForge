@@ -75,12 +75,13 @@ a{color:var(--brown-l);text-decoration:none}
   border-bottom: 1px solid rgba(255,255,255,.06);
   flex-shrink: 0;
   overflow: hidden;
+  transition: padding .28s, justify-content .28s;
 }
 .pf-sidebar__logo {
-  width: 34px; height: 34px;
-  border-radius: 9px; object-fit: contain; padding: 3px;
+  width: 30px; height: 30px;
+  border-radius: 8px; object-fit: contain; padding: 3px;
   flex-shrink: 0; background: rgba(242,232,217,.95);
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
   transition: transform .2s;
 }
 .pf-sidebar__logo:hover { transform: scale(1.06); }
@@ -138,6 +139,10 @@ a{color:var(--brown-l);text-decoration:none}
 /* ── Collapsed state (desktop) ───────────────────────────── */
 .pf-sidebar.collapsed {
   width: 58px;
+}
+.pf-sidebar.collapsed .pf-sidebar__brand {
+  padding: 0;
+  justify-content: center;
 }
 .pf-sidebar.collapsed .pf-sidebar__brand-name {
   opacity: 0; width: 0; pointer-events: none;
