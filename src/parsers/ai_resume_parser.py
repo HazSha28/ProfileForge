@@ -108,8 +108,14 @@ Resume text:
 
 
 def is_available() -> bool:
-    """Return True if a Gemini API key is configured."""
-    return bool(os.environ.get("GEMINI_API_KEY"))
+    """Return True if a Gemini API key is configured and google-genai is installed."""
+    if not os.environ.get("GEMINI_API_KEY"):
+        return False
+    try:
+        from google import genai  # noqa: F401
+        return True
+    except ImportError:
+        return False
 
 
 def extract(raw_text: str) -> Optional[CandidateRecord]:
@@ -129,23 +135,24 @@ def extract(raw_text: str) -> Optional[CandidateRecord]:
         return None
 
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types as genai_types
     except ImportError:
-        logger.warning("google-generativeai not installed — skipping AI extraction.")
+        logger.warning("google-genai not installed — skipping AI extraction.")
         return None
 
     logger.info("Running AI resume extraction via Gemini...")
 
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        client = genai.Client(api_key=api_key)
 
         prompt = _EXTRACTION_PROMPT.replace("{resume_text}", raw_text[:12000])
 
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.0,        # deterministic — no creativity
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                temperature=0.0,
                 max_output_tokens=4096,
             ),
         )

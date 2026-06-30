@@ -221,16 +221,28 @@ _RE_SKILLS_HEADER = re.compile(
     re.IGNORECASE,
 )
 
-# Sub-section header WITHIN a skills block — e.g. "Technical Skills:",
-# "Soft Skills:", "Tools:" — these delimit categories within one skills block
+# Sub-section header WITHIN a skills block.
+# Handles both "Soft Skills:" and "Programming Languages : C, C++, Java"
+# The key insight: these lines have a LABEL part followed by : then VALUES.
+# We strip the label and keep the values.
 _RE_SKILLS_SUBSECTION = re.compile(
     r"^\s*(?:"
     r"(?:technical|soft|core|key|professional|hard|other)\s+skills?"
+    r"|programming\s+languages?"
     r"|tools?\s*(?:&|and)?\s*(?:technologies|frameworks?)?"
+    r"|web\s+technologies|backend\s*(?:&|and)?\s*frameworks?"
+    r"|core\s+(?:cs\s+)?concepts?"
+    r"|databases?|version\s+control|cloud"
     r"|languages?|frameworks?|platforms?"
     r"|extra[\s\-]?curricular|activities|achievements?"
-    r")\s*[:]\s*",
+    r")\s*[:\s]\s*",   # colon OR space-colon-space separator
     re.IGNORECASE,
+)
+
+# Generic "Label : values" pattern — catches ANY subsection line within skills block
+# that follows the format "SomeLabel : comma, separated, values"
+_RE_LABEL_VALUES = re.compile(
+    r"^([A-Za-z][A-Za-z\s&\(\)]+?)\s*:\s*(.+)$"
 )
 
 # Common skill delimiters: comma, pipe, bullet, newline
@@ -503,12 +515,20 @@ def _extract_skills(text: str) -> list[str]:
 
         if in_skills_block:
             # ── Sub-section header within skills block ────────
-            # e.g. "Technical Skills: Python, Django" — strip label, keep values
+            # Pattern 1: known subsection keyword — strip label, keep values
             sub_match = _RE_SKILLS_SUBSECTION.match(stripped)
             if sub_match:
                 after_sub = stripped[sub_match.end():].strip()
                 if after_sub:
                     skills_lines.append(after_sub)
+                continue
+
+            # Pattern 2: generic "Label : values" line e.g. "Programming Languages : C, C++, Java"
+            # Only treat as label:values if the label part is short (< 40 chars)
+            lv_match = _RE_LABEL_VALUES.match(stripped)
+            if lv_match and len(lv_match.group(1)) < 40:
+                # Keep only the values part
+                skills_lines.append(lv_match.group(2).strip())
                 continue
 
             # ── Stop on a major non-skills section ───────────
