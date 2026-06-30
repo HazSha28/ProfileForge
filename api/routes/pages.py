@@ -85,6 +85,36 @@ async def help_page(request: Request):
     )
 
 
+# ── Bulk upload ───────────────────────────────────────────────
+@router.get("/bulk")
+async def bulk(request: Request):
+    return templates.TemplateResponse(
+        request, "bulk.html", _ctx(request, "bulk")
+    )
+
+
+@router.get("/bulk/progress")
+async def bulk_progress(request: Request):
+    return templates.TemplateResponse(
+        request, "bulk_progress.html", _ctx(request, "bulk")
+    )
+
+
+@router.get("/bulk/history")
+async def bulk_history(request: Request):
+    return templates.TemplateResponse(
+        request, "bulk_history.html", _ctx(request, "bulk")
+    )
+
+
+# ── History (single-candidate) ────────────────────────────────
+@router.get("/history")
+async def history(request: Request):
+    return templates.TemplateResponse(
+        request, "history.html", _ctx(request, "history")
+    )
+
+
 # ── Legal ─────────────────────────────────────────────────────
 @router.get("/terms")
 async def terms(request: Request):

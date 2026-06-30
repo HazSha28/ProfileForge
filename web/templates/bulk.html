@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% block title %}Bulk Upload — ProfileForge{% endblock %}
+
+{% block breadcrumb %}
+<a href="/dashboard" class="pf-breadcrumb__item pf-breadcrumb__item--link">Dashboard</a>
+<span class="pf-breadcrumb__sep">›</span>
+<span class="pf-breadcrumb__item">Bulk Upload</span>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── Bulk upload page ── */
+.bulk-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+.bulk-hero {
+  background: linear-gradient(135deg, #0d1b2a 0%, #162032 55%, #1a2d40 100%);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 18px;
+  padding: 30px 36px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.bulk-hero__title  { font-size: 1.5rem; font-weight: 800; color: #f0eeeb; margin-bottom: 6px; }
+.bulk-hero__sub    { font-size: .875rem; color: #7a8fa8; max-width: 420px; line-height: 1.6; }
+.bulk-hero__badge  {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(58,125,82,.2); border: 1px solid rgba(58,125,82,.3);
+  color: #6fcf97; font-size: .72rem; font-weight: 700; padding: 4px 10px;
+  border-radius: 20px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .6px;
+}
+
+/* Steps guide */
+.bulk-steps { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+.bulk-step {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 13px 15px; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--border);
+}
+.bulk-step__num {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  background: var(--brown); color: #f2e8d9; font-size: .7rem;
+  font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+.bulk-step__body strong { display: block; font-size: .84rem; color: var(--text); font-weight: 700; margin-bottom: 2px; }
+.bulk-step__body span   { font-size: .76rem; color: var(--dim); line-height: 1.5; }
+
+/* CSV template badge */
+.bulk-template-tip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(176,125,32,.08); border: 1px solid rgba(176,125,32,.2);
+  border-radius: 8px; padding: 10px 14px; margin-top: 14px; font-size: .8rem; color: var(--muted);
+}
+.bulk-template-tip a { color: var(--amber); text-decoration: underline; cursor: pointer; }
+
+/* Matching info */
+.bulk-match-info {
+  background: rgba(42,72,112,.07);
+  border: 1px solid rgba(42,72,112,.15);
+  border-radius: 10px; padding: 14px; margin-top: 14px;
+}
+.bulk-match-info__title { font-size: .78rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.bulk-match-rule {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .76rem; color: var(--muted); padding: 3px 0;
+}
+.bulk-match-rule__badge {
+  font-size: .62rem; font-weight: 800; padding: 2px 7px;
+  border-radius: 10px; min-width: 24px; text-align: center; flex-shrink: 0;
+}
+.badge-1 { background: rgba(58,125,82,.15); color: var(--green); }
+.badge-2 { background: rgba(42,72,112,.15); color: #5a90c8; }
+.badge-3 { background: rgba(176,125,32,.15); color: var(--amber); }
+.badge-4 { background: rgba(107,63,31,.15); color: var(--brown); }
+
+@media (max-width: 900px) {
+  .bulk-grid { grid-template-columns: 1fr; }
+  .bulk-hero { padding: 22px 20px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="bulk-hero">
+  <div>
+    <div class="bulk-hero__badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      Bulk Processing
+    </div>
+    <h1 class="bulk-hero__title">Upload Multiple Candidates</h1>
+    <p class="bulk-hero__sub">
+      Upload a recruiter CSV and a ZIP of resumes. ProfileForge matches,
+      merges, and scores every candidate — producing canonical JSON profiles.
+    </p>
+  </div>
+  <a href="/candidate" class="pf-btn pf-btn--outline pf-btn--sm" style="color:#8fa3b8;border-color:rgba(255,255,255,.15)">
+    Single Candidate →
+  </a>
+</div>
+
+<div class="bulk-grid">
+
+  <!-- Left: Upload form -->
+  <div class="pf-panel">
+    <div class="pf-panel__header">
+      <h3 class="pf-panel__title">Upload Sources</h3>
+      <span class="pf-panel__badge">Required</span>
+    </div>
+    <div class="pf-panel__body">
+      <form id="bulk-form" novalidate>
+
+        <!-- Recruiter CSV -->
+        <div class="pf-upload-field">
+          <label class="pf-upload-field__label">
+            <span class="pf-badge pf-badge--green">Structured</span>
+            Recruiter CSV
+          </label>
+          <div class="pf-drop-zone" id="csv-zone" data-target="csv-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" class="pf-drop-zone__icon">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+              <path d="M14 2v6h6M8 13h8M8 17h5"/>
+            </svg>
+            <span class="pf-drop-zone__text">Drop CSV here or <span class="pf-link">browse</span></span>
+            <span class="pf-drop-zone__hint">One row per candidate · columns: name, email, phone, skills…</span>
+            <input type="file" id="csv-input" accept=".csv" hidden />
+          </div>
+          <div class="pf-file-chip" id="csv-chip" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="color:var(--green);flex-shrink:0">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+              <path d="M14 2v6h6"/>
+            </svg>
+            <span class="pf-file-chip__name" id="csv-name"></span>
+            <button type="button" class="pf-file-chip__remove" data-clear="csv">✕</button>
+          </div>
+          <div class="bulk-template-tip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14" style="color:var(--amber);flex-shrink:0">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="currentColor"/>
+            </svg>
+            Required columns: <strong style="color:var(--text-2);margin:0 4px;">full_name, email, phone</strong> —
+            <a id="download-template">download template CSV</a>
+          </div>
+        </div>
+
+        <!-- Resume ZIP -->
+        <div class="pf-upload-field">
+          <label class="pf-upload-field__label">
+            <span class="pf-badge pf-badge--brown">Resumes</span>
+            Resume ZIP Archive
+          </label>
+          <div class="pf-drop-zone" id="zip-zone" data-target="zip-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28" class="pf-drop-zone__icon">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            <span class="pf-drop-zone__text">Drop ZIP here or <span class="pf-link">browse</span></span>
+            <span class="pf-drop-zone__hint">.zip containing PDF resumes — filenames should include candidate name or email</span>
+            <input type="file" id="zip-input" accept=".zip" hidden />
+          </div>
+          <div class="pf-file-chip" id="zip-chip" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="color:var(--brown);flex-shrink:0">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            </svg>
+            <span class="pf-file-chip__name" id="zip-name"></span>
+            <button type="button" class="pf-file-chip__remove" data-clear="zip">✕</button>
+          </div>
+        </div>
+
+        <!-- Error banner -->
+        <div class="pf-error-banner" id="error-banner" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <circle cx="12" cy="16" r=".5" fill="currentColor" stroke="currentColor"/>
+          </svg>
+          <span id="error-text"></span>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="pf-btn pf-btn--primary pf-btn--full" id="submit-btn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span id="btn-label">Start Bulk Processing</span>
+          <span id="btn-spinner" hidden>
+            <svg class="pf-spinner" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"
+                      stroke-linecap="round" stroke-dasharray="60" stroke-dashoffset="20"/>
+            </svg>
+          </span>
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Right: Info panel -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+
+    <!-- How it works -->
+    <div class="pf-panel pf-panel--info">
+      <div class="pf-panel__header">
+        <h3 class="pf-panel__title">How it works</h3>
+      </div>
+      <div class="pf-panel__body">
+        <div class="bulk-steps">
+          <div class="bulk-step">
+            <div class="bulk-step__num">1</div>
+            <div class="bulk-step__body">
+              <strong>Parse CSV rows</strong>
+              <span>Each row is one candidate — flexible column names supported</span>
+            </div>
+          </div>
+          <div class="bulk-step">
+            <div class="bulk-step__num">2</div>
+            <div class="bulk-step__body">
+              <strong>Extract ZIP resumes</strong>
+              <span>PDF and DOCX files extracted, named after candidates</span>
+            </div>
+          </div>
+          <div class="bulk-step">
+            <div class="bulk-step__num">3</div>
+            <div class="bulk-step__body">
+              <strong>Match resumes to rows</strong>
+              <span>Email → Phone → Name — deterministic priority chain</span>
+            </div>
+          </div>
+          <div class="bulk-step">
+            <div class="bulk-step__num">4</div>
+            <div class="bulk-step__body">
+              <strong>Run full pipeline per candidate</strong>
+              <span>Parse → Normalise → Merge → Confidence → Validate → Project</span>
+            </div>
+          </div>
+          <div class="bulk-step">
+            <div class="bulk-step__num">5</div>
+            <div class="bulk-step__body">
+              <strong>Generate JSON + summary</strong>
+              <span>One JSON per candidate · bulk_summary.json · Profile History updated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Matching rules -->
+    <div class="pf-panel pf-panel--info">
+      <div class="pf-panel__header">
+        <h3 class="pf-panel__title">Resume Matching Strategy</h3>
+      </div>
+      <div class="pf-panel__body">
+        <div class="bulk-match-info">
+          <div class="bulk-match-info__title">Priority chain (highest → lowest)</div>
+          <div class="bulk-match-rule">
+            <span class="bulk-match-rule__badge badge-1">1</span>
+            Email in resume filename
+          </div>
+          <div class="bulk-match-rule">
+            <span class="bulk-match-rule__badge badge-2">2</span>
+            Phone number in resume filename
+          </div>
+          <div class="bulk-match-rule">
+            <span class="bulk-match-rule__badge badge-3">3</span>
+            Exact candidate name in filename
+          </div>
+          <div class="bulk-match-rule">
+            <span class="bulk-match-rule__badge badge-4">4</span>
+            Fuzzy name match (handles initials, middle names)
+          </div>
+        </div>
+        <p style="font-size:.76rem;color:var(--dim);margin-top:10px;line-height:1.6;">
+          Tip: Name your resume files like <code style="font-family:var(--mono);background:var(--surface-2);padding:1px 5px;border-radius:4px;">jane_doe_resume.pdf</code>
+          or <code style="font-family:var(--mono);background:var(--surface-2);padding:1px 5px;border-radius:4px;">jane@company.com_cv.pdf</code>
+          for the best match rate.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/bulk.js"></script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Bulk History — ProfileForge{% endblock %}
+
+{% block breadcrumb %}
+<a href="/dashboard" class="pf-breadcrumb__item pf-breadcrumb__item--link">Dashboard</a>
+<span class="pf-breadcrumb__sep">›</span>
+<span class="pf-breadcrumb__item">Bulk History</span>
+{% endblock %}
+
+{% block topbar_actions %}
+<button class="pf-btn pf-btn--outline pf-btn--sm" id="clear-bulk-btn">Clear All</button>
+<a href="/bulk" class="pf-btn pf-btn--primary pf-btn--sm">+ New Bulk Job</a>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── Summary cards ── */
+.bh-summary {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 12px; margin-bottom: 22px;
+}
+.bh-stat {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.bh-stat:hover { border-color: var(--border-2); box-shadow: var(--shadow-sm); }
+.bh-stat__value { font-size: 1.5rem; font-weight: 800; color: var(--text); line-height: 1; }
+.bh-stat__label { font-size: .72rem; color: var(--dim); margin-top: 4px; }
+
+/* Toolbar */
+.bh-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 18px; flex-wrap: wrap;
+}
+.bh-search {
+  flex: 1; min-width: 200px;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 8px 12px;
+  transition: border-color .2s;
+}
+.bh-search:focus-within { border-color: var(--brown-l); }
+.bh-search input {
+  flex: 1; border: none; background: transparent;
+  color: var(--text-2); font-size: .875rem; outline: none;
+}
+.bh-search input::placeholder { color: var(--dim); }
+.bh-filter {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 8px 12px;
+  font-size: .82rem; color: var(--muted); cursor: pointer;
+  transition: border-color .2s; appearance: none;
+}
+.bh-filter:hover { border-color: var(--brown-l); }
+
+/* Table */
+.bh-table-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.bh-table { width: 100%; border-collapse: collapse; }
+.bh-table th {
+  padding: 10px 14px; text-align: left; font-size: .68rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--dim); background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.bh-table td {
+  padding: 12px 14px; font-size: .84rem; color: var(--text-2);
+  border-bottom: 1px solid var(--border); vertical-align: middle;
+}
+.bh-table tbody tr { transition: background .15s; }
+.bh-table tbody tr:hover { background: var(--surface-2); }
+.bh-table tbody tr:last-child td { border-bottom: none; }
+
+.bh-name    { font-weight: 700; color: var(--text); }
+.bh-email   { font-size: .75rem; color: var(--dim); margin-top: 2px; }
+.bh-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .68rem; font-weight: 700; padding: 3px 8px;
+  border-radius: 20px;
+}
+.bh-badge--done    { background: rgba(58,125,82,.12); color: var(--green); }
+.bh-badge--failed  { background: rgba(150,48,48,.12); color: var(--red); }
+.bh-badge--missing { background: rgba(176,125,32,.12); color: var(--amber); }
+.bh-badge--csv_missing { background: rgba(42,72,112,.12); color: #5a90c8; }
+
+.bh-conf-bar {
+  width: 70px; height: 4px; background: var(--border);
+  border-radius: 2px; overflow: hidden; display: inline-block;
+  vertical-align: middle; margin-right: 6px;
+}
+.bh-conf-fill { height: 100%; border-radius: 2px; }
+
+.bh-actions { display: flex; align-items: center; gap: 5px; }
+.bh-btn {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--dim); padding: 5px 8px; cursor: pointer; font-size: .74rem;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.bh-btn:hover { border-color: var(--brown-l); color: var(--brown); background: var(--brown-glow); }
+.bh-btn--danger:hover { border-color: var(--red); color: var(--red); background: rgba(150,48,48,.06); }
+
+/* Job group header */
+.bh-job-header {
+  padding: 9px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: .75rem; color: var(--muted);
+  display: flex; align-items: center; gap: 10px;
+}
+.bh-job-header__id   { font-family: var(--mono); font-weight: 700; color: var(--text-2); }
+.bh-job-header__time { color: var(--dim); }
+.bh-job-header__chip {
+  margin-left: auto; font-size: .68rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px;
+  background: rgba(107,63,31,.1); color: var(--brown);
+}
+
+/* Empty state */
+.bh-empty {
+  text-align: center; padding: 64px 20px;
+}
+.bh-empty__icon  { font-size: 3rem; opacity: .3; margin-bottom: 14px; }
+.bh-empty__title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.bh-empty__sub   { font-size: .85rem; color: var(--dim); margin-bottom: 20px; }
+
+@media (max-width: 900px) {
+  .bh-summary { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="pf-page-header">
+  <h2 class="pf-page-header__title">Bulk Processing History</h2>
+  <p class="pf-page-header__sub">All bulk jobs processed in this session. Search, filter, download individual profiles.</p>
+</div>
+
+<!-- Summary strip -->
+<div class="bh-summary" id="bh-summary">
+  <div class="bh-stat"><div class="bh-stat__value" id="bhs-total">0</div><div class="bh-stat__label">Total Candidates</div></div>
+  <div class="bh-stat"><div class="bh-stat__value" id="bhs-processed" style="color:var(--green)">0</div><div class="bh-stat__label">Processed</div></div>
+  <div class="bh-stat"><div class="bh-stat__value" id="bhs-failed" style="color:var(--red)">0</div><div class="bh-stat__label">Failed</div></div>
+  <div class="bh-stat"><div class="bh-stat__value" id="bhs-jobs">0</div><div class="bh-stat__label">Bulk Jobs</div></div>
+  <div class="bh-stat"><div class="bh-stat__value" id="bhs-conf">—</div><div class="bh-stat__label">Avg Confidence</div></div>
+</div>
+
+<!-- Toolbar -->
+<div class="bh-toolbar">
+  <div class="bh-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--dim)">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="bh-search" placeholder="Search by name, email, job ID…" />
+  </div>
+  <select class="bh-filter" id="bh-status-filter">
+    <option value="all">All status</option>
+    <option value="done">Processed</option>
+    <option value="failed">Failed</option>
+    <option value="resume_missing">Resume Missing</option>
+    <option value="csv_missing">CSV Missing</option>
+  </select>
+  <select class="bh-filter" id="bh-sort">
+    <option value="date-desc">Newest first</option>
+    <option value="date-asc">Oldest first</option>
+    <option value="name-asc">Name A–Z</option>
+    <option value="conf-desc">Highest confidence</option>
+  </select>
+</div>
+
+<!-- Table -->
+<div class="bh-table-wrap">
+  <table class="bh-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Candidate</th>
+        <th>Resume</th>
+        <th>Match</th>
+        <th>Status</th>
+        <th>Confidence</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="bh-tbody"></tbody>
+  </table>
+  <div id="bh-empty" hidden class="bh-empty">
+    <div class="bh-empty__icon">📦</div>
+    <div class="bh-empty__title">No bulk jobs yet</div>
+    <p class="bh-empty__sub">Start a bulk job to see results here.</p>
+    <a href="/bulk" class="pf-btn pf-btn--primary">Start Bulk Upload</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/bulk_history.js"></script>
+{% endblock %}

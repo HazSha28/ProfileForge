@@ -29,7 +29,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from api.routes import pages, pipeline, oauth
+from api.routes import pages, pipeline, oauth, bulk
 
 # ---------------------------------------------------------------------------
 # App factory
@@ -63,7 +63,8 @@ app.mount(
 # Register all routers
 app.include_router(oauth.router)       # /auth/google, /auth/github, /logout
 app.include_router(pipeline.router)    # /api/process, /api/health
-app.include_router(pages.router)       # /, /dashboard, /candidate, /login, etc.
+app.include_router(bulk.router)        # /api/bulk/process, /api/bulk/process/stream
+app.include_router(pages.router)       # /, /dashboard, /candidate, /bulk, etc.
 
 
 # ---------------------------------------------------------------------------

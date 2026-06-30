@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}Bulk Processing — ProfileForge{% endblock %}
+
+{% block breadcrumb %}
+<a href="/dashboard" class="pf-breadcrumb__item pf-breadcrumb__item--link">Dashboard</a>
+<span class="pf-breadcrumb__sep">›</span>
+<a href="/bulk" class="pf-breadcrumb__item pf-breadcrumb__item--link">Bulk Upload</a>
+<span class="pf-breadcrumb__sep">›</span>
+<span class="pf-breadcrumb__item">Processing</span>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── Bulk progress page ── */
+.bp-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Overall header card */
+.bp-header {
+  background: linear-gradient(135deg, #0d1b2a, #162032);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.bp-header__icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: rgba(107,63,31,.2); border: 1px solid rgba(196,154,114,.2);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  color: #c4b09a;
+}
+.bp-header__title  { font-size: 1.25rem; font-weight: 800; color: #f0eeeb; margin-bottom: 4px; }
+.bp-header__sub    { font-size: .85rem; color: #7a8fa8; }
+.bp-header__right  { margin-left: auto; text-align: right; }
+.bp-header__count  { font-size: 1.5rem; font-weight: 800; color: #f0eeeb; }
+.bp-header__clabel { font-size: .72rem; color: #4e6478; margin-top: 2px; }
+
+/* Progress bar */
+.bp-progress-wrap  { margin-bottom: 20px; }
+.bp-progress-label {
+  display: flex; justify-content: space-between;
+  font-size: .78rem; color: var(--muted); margin-bottom: 6px;
+}
+.bp-bar {
+  height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;
+}
+.bp-bar__fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, #6b3f1f, #c4b09a);
+  transition: width .4s ease;
+  width: 0%;
+}
+
+/* Stats strip */
+.bp-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px; margin-bottom: 20px;
+}
+.bp-stat {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+}
+.bp-stat__value { font-size: 1.4rem; font-weight: 800; color: var(--text); line-height: 1; }
+.bp-stat__label { font-size: .72rem; color: var(--dim); margin-top: 4px; }
+
+/* Candidate table */
+.bp-table-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+.bp-table { width: 100%; border-collapse: collapse; }
+.bp-table th {
+  padding: 10px 14px; text-align: left; font-size: .68rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--dim); background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.bp-table td {
+  padding: 12px 14px; font-size: .83rem; color: var(--text-2);
+  border-bottom: 1px solid var(--border); vertical-align: middle;
+}
+.bp-table tbody tr:last-child td { border-bottom: none; }
+.bp-table tbody tr { transition: background .15s; }
+.bp-table tbody tr:hover { background: var(--surface-2); }
+
+/* Status badges */
+.bp-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .68rem; font-weight: 700; padding: 3px 8px;
+  border-radius: 20px; white-space: nowrap;
+}
+.bp-badge--processing { background: rgba(42,72,112,.15); color: #5a90c8; }
+.bp-badge--done       { background: rgba(58,125,82,.12); color: var(--green); }
+.bp-badge--failed     { background: rgba(150,48,48,.12); color: var(--red); }
+.bp-badge--missing    { background: rgba(176,125,32,.12); color: var(--amber); }
+.bp-badge--pending    { background: var(--surface-2); color: var(--dim); }
+
+/* Confidence mini-bar */
+.bp-conf { display: flex; align-items: center; gap: 6px; }
+.bp-conf__bar {
+  width: 60px; height: 4px; background: var(--border);
+  border-radius: 2px; overflow: hidden;
+}
+.bp-conf__fill { height: 100%; border-radius: 2px; }
+
+/* Right sidebar */
+.bp-sidebar-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden; margin-bottom: 16px;
+}
+.bp-sidebar-card__header {
+  padding: 13px 16px; border-bottom: 1px solid var(--border);
+  font-size: .84rem; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.bp-sidebar-card__body { padding: 14px 16px; }
+.bp-current-name {
+  font-size: .95rem; font-weight: 700; color: var(--text); margin-bottom: 4px;
+}
+.bp-current-resume { font-size: .75rem; color: var(--dim); }
+.bp-eta { font-size: .8rem; color: var(--muted); }
+
+/* Log feed */
+.bp-log {
+  max-height: 260px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.bp-log-entry {
+  font-size: .75rem; color: var(--muted); padding: 4px 6px;
+  border-radius: 5px; display: flex; gap: 8px; align-items: flex-start;
+}
+.bp-log-entry--done    { color: var(--green); }
+.bp-log-entry--failed  { color: var(--red); }
+.bp-log-entry--warn    { color: var(--amber); }
+.bp-log-entry__time    { color: var(--dim); flex-shrink: 0; font-family: var(--mono); }
+
+/* Done state overlay */
+.bp-complete-banner {
+  background: linear-gradient(135deg, rgba(58,125,82,.1), rgba(58,125,82,.04));
+  border: 1px solid rgba(58,125,82,.25);
+  border-radius: 14px; padding: 24px;
+  text-align: center; margin-bottom: 20px;
+}
+.bp-complete-banner__icon { font-size: 2.5rem; margin-bottom: 10px; }
+.bp-complete-banner__title { font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+.bp-complete-banner__sub   { font-size: .85rem; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .bp-layout { grid-template-columns: 1fr; }
+  .bp-stats  { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="bp-header">
+  <div class="bp-header__icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  </div>
+  <div>
+    <div class="bp-header__title">Bulk Processing</div>
+    <div class="bp-header__sub" id="bp-status-text">Initialising…</div>
+  </div>
+  <div class="bp-header__right">
+    <div class="bp-header__count"><span id="bp-done-count">0</span> / <span id="bp-total-count">—</span></div>
+    <div class="bp-header__clabel">candidates processed</div>
+  </div>
+</div>
+
+<!-- Progress bar -->
+<div class="bp-progress-wrap">
+  <div class="bp-progress-label">
+    <span id="bp-stage-label">Uploading…</span>
+    <span id="bp-pct">0%</span>
+  </div>
+  <div class="bp-bar"><div class="bp-bar__fill" id="bp-bar-fill"></div></div>
+</div>
+
+<!-- Stats -->
+<div class="bp-stats">
+  <div class="bp-stat">
+    <div class="bp-stat__value" id="bps-processed">0</div>
+    <div class="bp-stat__label">Processed</div>
+  </div>
+  <div class="bp-stat">
+    <div class="bp-stat__value" id="bps-failed" style="color:var(--red)">0</div>
+    <div class="bp-stat__label">Failed</div>
+  </div>
+  <div class="bp-stat">
+    <div class="bp-stat__value" id="bps-missing" style="color:var(--amber)">0</div>
+    <div class="bp-stat__label">Resume Missing</div>
+  </div>
+  <div class="bp-stat">
+    <div class="bp-stat__value" id="bps-confidence">—</div>
+    <div class="bp-stat__label">Avg Confidence</div>
+  </div>
+</div>
+
+<!-- Complete banner (hidden until done) -->
+<div class="bp-complete-banner" id="bp-complete-banner" hidden>
+  <div class="bp-complete-banner__icon">✅</div>
+  <div class="bp-complete-banner__title" id="bp-complete-title">Bulk processing complete!</div>
+  <p class="bp-complete-banner__sub" id="bp-complete-sub"></p>
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;">
+    <a href="/bulk/history" class="pf-btn pf-btn--primary pf-btn--sm">View Results</a>
+    <a href="/bulk" class="pf-btn pf-btn--outline pf-btn--sm">New Bulk Job</a>
+  </div>
+</div>
+
+<div class="bp-layout">
+
+  <!-- Left: Candidate table -->
+  <div class="bp-table-wrap">
+    <table class="bp-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Candidate</th>
+          <th>Resume</th>
+          <th>Match</th>
+          <th>Status</th>
+          <th>Confidence</th>
+        </tr>
+      </thead>
+      <tbody id="bp-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Right: Live feed -->
+  <div>
+    <!-- Current candidate -->
+    <div class="bp-sidebar-card">
+      <div class="bp-sidebar-card__header">
+        Current
+        <span class="bp-badge bp-badge--processing" id="bp-current-badge" hidden>Processing…</span>
+      </div>
+      <div class="bp-sidebar-card__body">
+        <div class="bp-current-name" id="bp-current-name">—</div>
+        <div class="bp-current-resume" id="bp-current-resume"></div>
+        <div class="bp-eta" id="bp-eta" style="margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <!-- Activity log -->
+    <div class="bp-sidebar-card">
+      <div class="bp-sidebar-card__header">Activity Log</div>
+      <div class="bp-sidebar-card__body" style="padding:8px 10px;">
+        <div class="bp-log" id="bp-log"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/bulk_progress.js"></script>
+{% endblock %}
