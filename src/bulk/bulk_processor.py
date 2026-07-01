@@ -143,6 +143,7 @@ class BulkEvent:
                 "match_method": self.candidate.match_method,
                 "json_path":    self.candidate.json_path,
                 "processed_at": self.candidate.processed_at,
+                "profile":      self.candidate.profile,   # full profile for View button
             }
         if self.summary:
             data["summary"] = {
