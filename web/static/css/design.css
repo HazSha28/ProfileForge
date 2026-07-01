@@ -162,6 +162,12 @@ a{color:var(--brown-l);text-decoration:none}
 .pf-sidebar.collapsed .pf-user-chip__logout {
   opacity: 0; width: 0; overflow: hidden; pointer-events: none;
 }
+/* Keep avatar exactly 30px in collapsed mode — never let it grow */
+.pf-sidebar.collapsed .pf-user-chip__avatar,
+.pf-sidebar.collapsed .pf-user-chip__initials {
+  width: 30px; height: 30px; min-width: 30px; max-width: 30px;
+  flex-shrink: 0;
+}
 
 /* ── Topbar sidebar toggle button ───────────────────────────── */
 .pf-topbar__sidebar-toggle {
@@ -198,7 +204,12 @@ a{color:var(--brown-l);text-decoration:none}
 }
 
 /* Footer / user chip */
-.pf-sidebar__footer { padding: 10px 8px; border-top: 1px solid rgba(255,255,255,.055); flex-shrink: 0; }
+.pf-sidebar__footer {
+  padding: 10px 8px;
+  border-top: 1px solid rgba(255,255,255,.055);
+  flex-shrink: 0;
+  overflow: hidden;   /* prevent avatar bleed */
+}
 .pf-user-chip {
   display: flex; align-items: center; gap: 9px;
   padding: 9px 10px; border-radius: 9px;
@@ -208,12 +219,12 @@ a{color:var(--brown-l);text-decoration:none}
 }
 .pf-user-chip:hover { background: rgba(255,255,255,.08); }
 .pf-user-chip__avatar {
-  width: 30px; height: 30px; min-width: 30px;
+  width: 30px; height: 30px; min-width: 30px; max-width: 30px;
   border-radius: 50%; object-fit: cover; flex-shrink: 0;
   border: 1.5px solid rgba(196,154,114,.3);
 }
 .pf-user-chip__initials {
-  width: 30px; height: 30px; min-width: 30px;
+  width: 30px; height: 30px; min-width: 30px; max-width: 30px;
   border-radius: 50%; flex-shrink: 0;
   background: linear-gradient(135deg, #8b5e3c, #6b3f1f); color: #f2e8d9;
   font-size: .72rem; font-weight: 800;
