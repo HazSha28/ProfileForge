@@ -1,25 +1,15 @@
 """
 src/parsers/ai_resume_parser.py
 --------------------------------
-WHY THIS FILE EXISTS
---------------------
-The regex-based resume parser works for well-formatted PDFs but misses fields
-in unusual layouts. This module sends the raw PDF text to Google Gemini with
-a strict extraction prompt — the LLM finds every field regardless of layout,
-and is explicitly instructed never to hallucinate or infer missing data.
-
-PIPELINE CONNECTION
--------------------
-  resume_parser.py calls this module when GEMINI_API_KEY is present.
-  Falls back to the regex parser when the key is absent or the API fails.
-
-  PDF text → Gemini API → strict JSON → CandidateRecord
+AI-powered resume extraction via Google Gemini.
+Falls back to regex parser on any failure (quota, network, parse error).
 """
 
 from __future__ import annotations
 
 import json
 import os
+import time
 from typing import Optional
 
 from src.models.schema import (
@@ -31,6 +21,35 @@ from src.models.schema import (
 from src.utils.helpers import get_logger
 
 logger = get_logger(__name__)
+
+# ---------------------------------------------------------------------------
+# Circuit breaker — if Gemini fails 3 times, skip it for 10 minutes
+# ---------------------------------------------------------------------------
+_fail_count = 0
+_fail_until = 0.0
+_MAX_FAILS   = 3
+_COOLDOWN    = 600   # 10 minutes
+
+
+def _is_circuit_open() -> bool:
+    global _fail_count, _fail_until
+    if _fail_count >= _MAX_FAILS and time.time() < _fail_until:
+        logger.info("Gemini circuit breaker open — using regex fallback.")
+        return True
+    if time.time() >= _fail_until:
+        _fail_count = 0   # reset after cooldown
+    return False
+
+
+def _record_failure():
+    global _fail_count, _fail_until
+    _fail_count += 1
+    if _fail_count >= _MAX_FAILS:
+        _fail_until = time.time() + _COOLDOWN
+        logger.warning(
+            "Gemini failed %d times — switching to regex for %d minutes.",
+            _fail_count, _COOLDOWN // 60
+        )
 
 # ---------------------------------------------------------------------------
 # Extraction prompt — strict, no hallucination
@@ -108,7 +127,10 @@ Resume text:
 
 
 def is_available() -> bool:
-    """Return True if a Gemini API key is configured and google-genai is installed."""
+def is_available() -> bool:
+    """Return True if Gemini is configured, installed, and circuit is closed."""
+    if _is_circuit_open():
+        return False
     if not os.environ.get("GEMINI_API_KEY"):
         return False
     try:
@@ -120,32 +142,24 @@ def is_available() -> bool:
 
 def extract(raw_text: str) -> Optional[CandidateRecord]:
     """
-    Send resume text to Gemini and parse the structured JSON response
-    into a CandidateRecord.
-
-    Args:
-        raw_text: Full text extracted from the PDF by pdfplumber.
-
-    Returns:
-        CandidateRecord with source="Resume" or None if extraction fails.
+    Extract resume fields via Gemini. Returns None on any failure so
+    resume_parser.py falls back to regex automatically.
     """
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not api_key:
-        logger.warning("GEMINI_API_KEY not set — skipping AI extraction.")
+    if not api_key or _is_circuit_open():
         return None
 
     try:
         from google import genai
         from google.genai import types as genai_types
     except ImportError:
-        logger.warning("google-genai not installed — skipping AI extraction.")
+        logger.warning("google-genai not installed — using regex fallback.")
         return None
 
     logger.info("Running AI resume extraction via Gemini...")
 
     try:
         client = genai.Client(api_key=api_key)
-
         prompt = _EXTRACTION_PROMPT.replace("{resume_text}", raw_text[:12000])
 
         response = client.models.generate_content(
@@ -158,8 +172,6 @@ def extract(raw_text: str) -> Optional[CandidateRecord]:
         )
 
         raw_json = response.text.strip()
-
-        # Strip markdown code fences if Gemini added them despite instructions
         if raw_json.startswith("```"):
             raw_json = raw_json.split("```")[1]
             if raw_json.startswith("json"):
@@ -172,9 +184,15 @@ def extract(raw_text: str) -> Optional[CandidateRecord]:
 
     except json.JSONDecodeError as exc:
         logger.error("AI extraction returned invalid JSON: %s", exc)
+        _record_failure()
         return None
     except Exception as exc:
-        logger.error("AI extraction failed: %s", exc)
+        err_str = str(exc)
+        if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower():
+            logger.warning("Gemini quota exceeded — falling back to regex.")
+        else:
+            logger.error("AI extraction failed: %s", exc)
+        _record_failure()
         return None
 
 

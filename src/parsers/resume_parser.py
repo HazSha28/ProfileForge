@@ -204,20 +204,20 @@ _RE_DATE_RANGE = re.compile(
     re.IGNORECASE,
 )
 
-# Skills section header — matches ALL skill-related section headers:
-# "Skills", "Technical Skills", "Soft Skills", "Core Skills",
-# "Tools & Technologies", "Extracurricular", "Activities", etc.
+# Skills section header — matches ALL skill-related section headers.
+# Uses re.search (not re.match) style with ^ to handle trailing content
+# from two-column PDF layouts like "TECHNICAL SKILLS    CERTIFICATIONS"
 _RE_SKILLS_HEADER = re.compile(
-    r"^\s*(?:"
+    r"(?:^|\b)(?:"
     r"(?:technical\s+|soft\s+|core\s+|key\s+|professional\s+|transferable\s+)?"
     r"skills?|"
     r"tools?\s*(?:&|and)?\s*(?:technologies|tech|frameworks?)?|"
     r"technologies|tech\s*stack|"
     r"competenc(?:y|ies)|capabilities|"
-    r"extra[\s\-]?curricular|activities|"
+    r"extra[\s\-]?curricular(?:\s+activities)?|"
     r"hobbies\s*(?:&|and)?\s*interests?|"
     r"interests?|strengths?"
-    r")\s*[:\-]?\s*$",
+    r")(?:\s*[:\-]|\s*$|\s{2,})",   # colon/dash, end-of-line, OR 2+ spaces (two-column)
     re.IGNORECASE,
 )
 
@@ -496,20 +496,27 @@ def _extract_skills(text: str) -> list[str]:
         stripped = line.strip()
 
         # ── Start a new skills block ──────────────────────────
-        if _RE_SKILLS_HEADER.match(stripped):
+        if _RE_SKILLS_HEADER.search(stripped):
             in_skills_block = True
-            # Skills may start on the same line after the header label
+            # For two-column headers like "TECHNICAL SKILLS    CERTIFICATIONS & COURSES"
+            # find where the skills keyword ends and discard everything after
+            # two or more spaces (that's the second column)
             after_header = re.sub(
-                r"^\s*(?:technical\s+|soft\s+|core\s+|key\s+|professional\s+|"
+                r"(?:technical\s+|soft\s+|core\s+|key\s+|professional\s+|"
                 r"transferable\s+|hard\s+|other\s+)?skills?\s*[:&/]?\s*|"
-                r"^\s*tools?\s*(?:&|and)?\s*(?:technologies|tech|frameworks?)?\s*[:]\s*|"
-                r"^\s*extra[\s\-]?curricular\s*(?:activities)?\s*[:]\s*|"
-                r"^\s*activities\s*[:]\s*|"
-                r"^\s*interests?\s*[:]\s*|"
-                r"^\s*strengths?\s*[:]\s*",
-                "", stripped, flags=re.IGNORECASE
+                r"tools?\s*(?:&|and)?\s*(?:technologies|tech|frameworks?)?\s*[:]\s*|"
+                r"extra[\s\-]?curricular\s*(?:activities)?\s*[:]\s*|"
+                r"activities\s*[:]\s*|interests?\s*[:]\s*|strengths?\s*[:]\s*",
+                "", stripped, flags=re.IGNORECASE, count=1
             ).strip()
-            if after_header:
+            # Strip anything after 3+ spaces (second column in two-column layout)
+            after_header = re.split(r"\s{3,}", after_header)[0].strip()
+            # Also strip known non-skill second column headers
+            after_header = re.sub(
+                r"\b(?:certifications?|courses?|awards?|achievements?)\b.*$",
+                "", after_header, flags=re.IGNORECASE
+            ).strip()
+            if after_header and len(after_header) < 60:
                 skills_lines.append(after_header)
             continue
 
@@ -606,7 +613,7 @@ def _maybe_split_space_skills(item: str) -> list[str]:
     no_sentence_words = not any(t.lower() in _SENTENCE_WORDS for t in tokens)
     no_long_token = not any(len(t) > 20 for t in tokens)
 
-    if all_short and no_sentence_words and no_long_token and len(tokens) <= 8:
+    if all_short and no_sentence_words and no_long_token and len(tokens) >= 3 and len(tokens) <= 8:
         return tokens
 
     return [item]
@@ -728,9 +735,9 @@ def _is_major_section_header(line: str) -> bool:
 
     # All-caps short line (e.g. "EXPERIENCE", "EDUCATION", "PROJECTS")
     # BUT skip if it matches the skills header pattern
-    if stripped.isupper() and 2 <= len(stripped.split()) <= 4:
+    if stripped.isupper() and 2 <= len(stripped.split()) <= 5:
         # Don't stop on skills-related headers
-        if _RE_SKILLS_HEADER.match(stripped):
+        if _RE_SKILLS_HEADER.search(stripped):
             return False
         return True
 
