@@ -116,13 +116,56 @@ function renderProfile(p, warns) {
 
   // Links card
   const linksVal = gv(p.links) || {};
-  const linksHtml = Object.entries(linksVal)
-    .filter(([,v]) => v && (typeof v === "string" ? v : v.length))
-    .map(([k,v]) => `<div style="font-size:.82rem;margin-bottom:4px;"><span style="color:var(--dim);font-size:.75rem;">${k}: </span><a href="${esc(v)}" target="_blank" style="color:var(--brown-l);">${esc(Array.isArray(v)?v.join(", "):v)}</a></div>`)
-    .join("");
+
+  function renderLinkItem(key, val) {
+    if (!val) return "";
+    // Handle arrays (e.g. "other" links)
+    if (Array.isArray(val)) {
+      return val.filter(Boolean).map((url, i) => {
+        const label = key === "other" ? (i === 0 ? "Portfolio" : `Other ${i}`) : key;
+        return renderSingleLink(label, url);
+      }).join("");
+    }
+    return renderSingleLink(key, val);
+  }
+
+  function renderSingleLink(label, url) {
+    if (!url || typeof url !== "string") return "";
+    // Ensure URL has protocol
+    const href = url.startsWith("http") ? url : "https://" + url;
+    // Display label: capitalise and make readable
+    const displayLabel = label.charAt(0).toUpperCase() + label.slice(1);
+    // Short display text: just the domain/path without protocol
+    const displayUrl = url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+    return `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="color:var(--dim);font-size:.74rem;min-width:70px">${esc(displayLabel)}:</span>
+        <a href="${href}" target="_blank" rel="noopener noreferrer"
+           style="color:var(--brown-l);font-size:.82rem;font-weight:600;text-decoration:none;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;
+                  transition:color .15s;"
+           onmouseover="this.style.textDecoration='underline'"
+           onmouseout="this.style.textDecoration='none'"
+           title="${href}">${esc(displayUrl)}</a>
+        <a href="${href}" target="_blank" rel="noopener noreferrer"
+           style="color:var(--dim);flex-shrink:0;" title="Open ${displayLabel}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+      </div>`;
+  }
+
+  const linkOrder = ["linkedin", "github", "portfolio", "other"];
+  const linksHtml = linkOrder
+    .map(k => renderLinkItem(k, linksVal[k]))
+    .join("") ||
+    '<span style="color:var(--dim);font-style:italic;font-size:.82rem">None</span>';
+
   document.getElementById("links-card").innerHTML = `
     <div class="pf-field-card__header"><span class="pf-field-card__name">Links</span></div>
-    <div class="pf-field-card__value">${linksHtml || '<span style="color:var(--dim);font-style:italic">None</span>'}</div>
+    <div class="pf-field-card__value" style="padding-top:4px">${linksHtml}</div>
     <div class="pf-field-card__footer">${confBar(gc(p.links))}<div class="pf-sources">${sourcePills(gs(p.links))}</div></div>`;
 
   // Confidence overview
