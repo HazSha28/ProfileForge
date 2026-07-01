@@ -97,15 +97,15 @@ function upsertRow(c) {
   const confCol  = confColor(confVal);
 
   tr.innerHTML = `
-    <td style="color:var(--dim);font-size:.78rem;">${c.index}</td>
-    <td>
+    <td class="bp-col-num">${c.index}</td>
+    <td class="bp-col-cand">
       <div class="bp-candidate-name" title="${esc(c.name)}">${esc(c.name)}</div>
-      <div class="bp-candidate-email" title="${esc(c.email || "")}">${esc(c.email || "")}</div>
+      <div class="bp-candidate-email">${esc(c.email || "")}</div>
     </td>
-    <td style="font-size:.74rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(c.resume_name || "")}">${esc(c.resume_name || "—")}</td>
-    <td>${matchBadge(c.match_method)}</td>
-    <td>${badgeHTML(c.status)}</td>
-    <td>
+    <td class="bp-col-resume" title="${esc(c.resume_name || "")}">${esc(c.resume_name || "—")}</td>
+    <td class="bp-col-match">${matchBadge(c.match_method)}</td>
+    <td class="bp-col-status">${badgeHTML(c.status)}</td>
+    <td class="bp-col-conf">
       ${confPct > 0 ? `
         <div class="bp-conf">
           <div class="bp-conf__bar">

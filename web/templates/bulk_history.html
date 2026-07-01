@@ -59,12 +59,12 @@
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-lg); overflow: hidden;
 }
-.bh-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.bh-table { width: 100%; border-collapse: collapse; }
 .bh-table th {
   padding: 10px 14px; text-align: left; font-size: .68rem;
   font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
   color: var(--dim); background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border); white-space: nowrap;
 }
 .bh-table td {
   padding: 12px 14px; font-size: .84rem; color: var(--text-2);
@@ -73,6 +73,29 @@
 .bh-table tbody tr { transition: background .15s; }
 .bh-table tbody tr:hover { background: var(--surface-2); }
 .bh-table tbody tr:last-child td { border-bottom: none; }
+
+/* Column: # */
+.bh-col-num  { width: 36px; color: var(--dim); font-size: .76rem; }
+/* Column: Candidate — takes remaining space */
+.bh-col-name { min-width: 140px; max-width: 200px; }
+.bh-col-name .bh-name  { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.bh-col-name .bh-email { font-size: .73rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+/* Column: Resume */
+.bh-col-resume { min-width: 100px; max-width: 160px; font-size: .74rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Column: Match */
+.bh-col-match  { width: 82px; white-space: nowrap; }
+/* Column: Status */
+.bh-col-status { width: 110px; }
+/* Column: Confidence */
+.bh-col-conf   { width: 120px; }
+.bh-col-conf .conf-wrap { display: flex; align-items: center; gap: 6px; }
+.bh-col-conf .conf-bar  { width: 54px; min-width: 54px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+.bh-col-conf .conf-fill { height: 100%; border-radius: 2px; }
+.bh-col-conf .conf-pct  { font-size: .79rem; color: var(--muted); white-space: nowrap; }
+/* Column: Date */
+.bh-col-date   { width: 90px; font-size: .78rem; color: var(--dim); white-space: nowrap; }
+/* Column: Actions */
+.bh-col-actions { width: 120px; }
 
 .bh-name    { font-weight: 700; color: var(--text); }
 .bh-email   { font-size: .75rem; color: var(--dim); margin-top: 2px; }
@@ -177,14 +200,14 @@
   <table class="bh-table">
     <thead>
       <tr>
-        <th>#</th>
-        <th>Candidate</th>
-        <th>Resume</th>
-        <th>Match</th>
-        <th>Status</th>
-        <th>Confidence</th>
-        <th>Date</th>
-        <th>Actions</th>
+        <th class="bh-col-num">#</th>
+        <th class="bh-col-name">Candidate</th>
+        <th class="bh-col-resume">Resume</th>
+        <th class="bh-col-match">Match</th>
+        <th class="bh-col-status">Status</th>
+        <th class="bh-col-conf">Confidence</th>
+        <th class="bh-col-date">Date</th>
+        <th class="bh-col-actions">Actions</th>
       </tr>
     </thead>
     <tbody id="bh-tbody"></tbody>

@@ -76,39 +76,39 @@
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 14px; overflow: hidden;
 }
-.bp-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.bp-table { width: 100%; border-collapse: collapse; }
 .bp-table th {
   padding: 10px 14px; text-align: left; font-size: .68rem;
   font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
   color: var(--dim); background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border); white-space: nowrap;
 }
 .bp-table td {
   padding: 10px 14px; font-size: .83rem; color: var(--text-2);
   border-bottom: 1px solid var(--border); vertical-align: middle;
-  overflow: hidden;
 }
 .bp-table tbody tr:last-child td { border-bottom: none; }
 .bp-table tbody tr { transition: background .15s; }
 .bp-table tbody tr:hover { background: var(--surface-2); }
 
-/* Fixed column widths */
-.bp-table th:nth-child(1), .bp-table td:nth-child(1) { width: 40px; }   /* # */
-.bp-table th:nth-child(2), .bp-table td:nth-child(2) { width: 26%; }    /* Candidate */
-.bp-table th:nth-child(3), .bp-table td:nth-child(3) { width: 22%; }    /* Resume */
-.bp-table th:nth-child(4), .bp-table td:nth-child(4) { width: 90px; }   /* Match */
-.bp-table th:nth-child(5), .bp-table td:nth-child(5) { width: 110px; }  /* Status */
-.bp-table th:nth-child(6), .bp-table td:nth-child(6) { width: 130px; }  /* Confidence */
+/* Column sizing */
+.bp-col-num    { width: 36px; color: var(--dim); font-size: .78rem; }
+.bp-col-cand   { min-width: 130px; }
+.bp-col-resume { min-width: 100px; max-width: 160px; font-size: .74rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bp-col-match  { width: 82px; white-space: nowrap; }
+.bp-col-status { width: 115px; }
+.bp-col-conf   { width: 130px; }
 
-/* Name cell — truncate long names */
+/* Name cell */
 .bp-candidate-name {
   font-weight: 700; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: 100%;
+  max-width: 200px;
 }
 .bp-candidate-email {
   font-size: .73rem; color: var(--dim);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 /* Status badges */
@@ -252,12 +252,12 @@
     <table class="bp-table">
       <thead>
         <tr>
-          <th>#</th>
-          <th>Candidate</th>
-          <th>Resume</th>
-          <th>Match</th>
-          <th>Status</th>
-          <th>Confidence</th>
+          <th class="bp-col-num">#</th>
+          <th class="bp-col-cand">Candidate</th>
+          <th class="bp-col-resume">Resume</th>
+          <th class="bp-col-match">Match</th>
+          <th class="bp-col-status">Status</th>
+          <th class="bp-col-conf">Confidence</th>
         </tr>
       </thead>
       <tbody id="bp-tbody"></tbody>
