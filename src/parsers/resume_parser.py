@@ -539,28 +539,77 @@ def _extract_skills(text: str) -> list[str]:
             if stripped:
                 skills_lines.append(stripped)
 
-    # Split collected lines on common delimiters
-    combined = " | ".join(skills_lines)   # use | so we can split uniformly
-    raw_items = re.split(r"[,|•·–\-\n/]+", combined)
-
+    # Split collected lines on common delimiters (comma, pipe, bullet)
+    # Keep space-separated lines intact for now — handle per-line
     result: list[str] = []
     seen:   set[str]  = set()
 
-    for item in raw_items:
-        item = item.strip().strip("•·–-").strip()
-        # Filter: non-empty, not too long (sentences), not a sub-header label
-        if (
-            item
-            and 2 <= len(item) <= 50
-            and not _RE_SKILLS_SUBSECTION.match(item + ":")
-            and not re.match(r"^\d+[\.\)]\s*", item)   # numbered list artifacts
-        ):
-            key = item.lower()
-            if key not in seen:
-                seen.add(key)
-                result.append(item)
+    for line in skills_lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # If the line contains commas/pipes/bullets → comma-split (skills are explicit)
+        if re.search(r"[,|•·]", line):
+            items = re.split(r"[,|•·]+", line)
+        else:
+            # Remove leading bullet/dash before space-split
+            line_clean = re.sub(r"^[\-–•·]\s*", "", line)
+            items = _maybe_split_space_skills(line_clean)
+
+        for item in items:
+            skill = item.strip().strip("•·–-").strip()
+            if (
+                skill
+                and 2 <= len(skill) <= 50
+                and not _RE_SKILLS_SUBSECTION.match(skill + ":")
+                and not re.match(r"^\d+[\.\)]\s*", skill)
+                and len(skill.split()) <= 5   # single skill, not a sentence
+            ):
+                key = skill.lower()
+                if key not in seen:
+                    seen.add(key)
+                    result.append(skill)
 
     return result
+
+    return result
+
+
+def _maybe_split_space_skills(item: str) -> list[str]:
+    """
+    Detect and split space-separated skill lists like:
+      "C++ Html Git SpringBoot SQL"  →  ["C++", "Html", "Git", "SpringBoot", "SQL"]
+
+    Only splits if:
+    - Item has 2+ space-separated tokens
+    - Each token is short (≤ 20 chars)
+    - No token looks like a sentence word (no common English stop words)
+    - Not a label:value line (already handled)
+
+    Returns the original item in a list if it shouldn't be split.
+    """
+    tokens = item.split()
+    if len(tokens) < 2:
+        return [item]
+
+    # If all tokens are short skill-like words, split them
+    _SENTENCE_WORDS = {
+        "and", "or", "the", "a", "an", "in", "on", "at", "to", "for",
+        "of", "with", "by", "from", "as", "is", "are", "was", "were",
+        "be", "been", "have", "has", "had", "do", "did", "will", "would",
+        "can", "could", "should", "may", "might", "shall", "not", "no",
+        "its", "it", "this", "that", "these", "those", "my", "your",
+    }
+
+    all_short = all(len(t) <= 25 for t in tokens)
+    no_sentence_words = not any(t.lower() in _SENTENCE_WORDS for t in tokens)
+    no_long_token = not any(len(t) > 20 for t in tokens)
+
+    if all_short and no_sentence_words and no_long_token and len(tokens) <= 8:
+        return tokens
+
+    return [item]
 
 
 def _extract_experience(text: str) -> tuple[list[ExperienceEntry], Optional[int]]:
@@ -663,10 +712,12 @@ def _is_major_section_header(line: str) -> bool:
         "education", "academic background", "qualifications",
         "projects", "personal projects", "academic projects",
         "certifications", "certificates", "achievements", "awards",
-        "publications", "research", "languages",
+        "publications", "research",
         "summary", "objective", "profile", "about",
         "references", "declaration",
         "internship", "internships",
+        "competitive programming", "competitive",
+        "certifications & courses",
     }
 
     lower = stripped.lower()
@@ -676,15 +727,11 @@ def _is_major_section_header(line: str) -> bool:
         return True
 
     # All-caps short line (e.g. "EXPERIENCE", "EDUCATION", "PROJECTS")
+    # BUT skip if it matches the skills header pattern
     if stripped.isupper() and 2 <= len(stripped.split()) <= 4:
-        return True
-
-    # Title-case short heading ending without colon (e.g. "Work Experience")
-    if (
-        len(stripped.split()) <= 4
-        and not stripped.endswith(":")
-        and any(lower.startswith(s) for s in _MAJOR_SECTIONS)
-    ):
+        # Don't stop on skills-related headers
+        if _RE_SKILLS_HEADER.match(stripped):
+            return False
         return True
 
     return False
