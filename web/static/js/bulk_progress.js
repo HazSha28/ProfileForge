@@ -97,22 +97,22 @@ function upsertRow(c) {
   const confCol  = confColor(confVal);
 
   tr.innerHTML = `
-    <td class="bp-col-num">${c.index}</td>
-    <td class="bp-col-cand">
-      <div class="bp-candidate-name" title="${esc(c.name)}">${esc(c.name)}</div>
-      <div class="bp-candidate-email">${esc(c.email || "")}</div>
+    <td style="width:36px;color:var(--dim);font-size:.76rem;padding:10px 8px">${c.index}</td>
+    <td style="padding:10px 12px;max-width:160px">
+      <div style="font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(c.name)}">${esc(c.name)}</div>
+      <div style="font-size:.72rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.email || "")}</div>
     </td>
-    <td class="bp-col-resume" title="${esc(c.resume_name || "")}">${esc(c.resume_name || "—")}</td>
-    <td class="bp-col-match">${matchBadge(c.match_method)}</td>
-    <td class="bp-col-status">${badgeHTML(c.status)}</td>
-    <td class="bp-col-conf">
+    <td style="padding:10px 8px;width:140px;max-width:140px;font-size:.73rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(c.resume_name || "")}">${esc(c.resume_name || "—")}</td>
+    <td style="padding:10px 8px;width:80px;white-space:nowrap">${matchBadge(c.match_method)}</td>
+    <td style="padding:10px 8px;width:110px">${badgeHTML(c.status)}</td>
+    <td style="padding:10px 8px;width:120px">
       ${confPct > 0 ? `
-        <div class="bp-conf">
-          <div class="bp-conf__bar">
-            <div class="bp-conf__fill" style="width:${confPct}%;background:${confCol}"></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="width:52px;min-width:52px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0">
+            <div style="width:${confPct}%;height:100%;background:${confCol};border-radius:2px"></div>
           </div>
           <span style="font-size:.76rem;color:var(--muted);white-space:nowrap">${confPct}%</span>
-        </div>` : '<span style="color:var(--dim);font-size:.76rem;">—</span>'}
+        </div>` : '<span style="color:var(--dim);font-size:.76rem">—</span>'}
     </td>
   `;
 }

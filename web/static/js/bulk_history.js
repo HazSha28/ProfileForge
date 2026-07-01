@@ -102,23 +102,25 @@ function render() {
 
     return `
     <tr>
-      <td class="bh-col-num">${r.index}</td>
-      <td class="bh-col-name">
-        <div class="bh-name" title="${esc(r.name)}">${esc(r.name)}</div>
-        <div class="bh-email">${esc(r.email||"")}</div>
+      <td style="width:36px;font-size:.76rem;color:var(--dim);padding:10px 8px">${r.index}</td>
+      <td style="padding:10px 12px;max-width:160px">
+        <div style="font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.name)}">${esc(r.name)}</div>
+        <div style="font-size:.72rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.email||"")}</div>
       </td>
-      <td class="bh-col-resume" title="${esc(r.resume_name||"")}">${esc(r.resume_name||"—")}</td>
-      <td class="bh-col-match"><span style="font-size:.7rem;color:${mcol};font-weight:700">${esc(r.match_method||"—")}</span></td>
-      <td class="bh-col-status"><span class="bh-badge ${scls}">${slabel}</span></td>
-      <td class="bh-col-conf">
+      <td style="padding:10px 8px;width:140px;max-width:140px;font-size:.73rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.resume_name||"")}">${esc(r.resume_name||"—")}</td>
+      <td style="padding:10px 8px;width:80px;white-space:nowrap"><span style="font-size:.7rem;color:${mcol};font-weight:700">${esc(r.match_method||"—")}</span></td>
+      <td style="padding:10px 8px;width:110px"><span class="bh-badge ${scls}">${slabel}</span></td>
+      <td style="padding:10px 8px;width:120px">
         ${p > 0 ? `
-          <div class="conf-wrap">
-            <div class="conf-bar"><div class="conf-fill" style="width:${p}%;background:${col}"></div></div>
-            <span class="conf-pct">${p}%</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="width:52px;min-width:52px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0">
+              <div style="width:${p}%;height:100%;background:${col};border-radius:2px"></div>
+            </div>
+            <span style="font-size:.79rem;color:var(--muted);white-space:nowrap">${p}%</span>
           </div>` : '<span style="color:var(--dim)">—</span>'}
       </td>
-      <td class="bh-col-date">${dateStr}</td>
-      <td class="bh-col-actions">
+      <td style="padding:10px 8px;width:90px;font-size:.78rem;color:var(--dim);white-space:nowrap">${dateStr}</td>
+      <td style="padding:10px 8px;width:120px">
         <div class="bh-actions">
           ${r.profile ? `<button class="bh-btn" onclick="viewProfile('${safeKey}')" title="View profile">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
