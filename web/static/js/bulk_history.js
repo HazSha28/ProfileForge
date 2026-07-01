@@ -92,30 +92,33 @@ function render() {
     const [scls, slabel] = statusMap[r.status] || ["", r.status];
 
     const matchColors = {
-      email:"#5a90c8",phone:"#b07d20",exact_name:"#3a7d52",fuzzy_name:"#6b3f1f",none:"#7a8fa8"
+      email:"#5a90c8",phone:"#b07d20",exact_name:"#3a7d52",
+      fuzzy_name:"#6b3f1f",regno:"#5a90c8",github:"#3a7d52",none:"#7a8fa8"
     };
     const mcol = matchColors[r.match_method] || "#7a8fa8";
 
-    // Unique key for this row
     const key = JSON.stringify({job_id:r.job_id, index:r.index});
     const safeKey = btoa(key).replace(/=/g,"");
 
     return `
     <tr>
-      <td style="font-size:.76rem;color:var(--dim)">${r.index}</td>
-      <td>
-        <div class="bh-name">${esc(r.name)}</div>
-        <div class="bh-email">${esc(r.email||"")}</div>
+      <td style="font-size:.76rem;color:var(--dim);width:36px">${r.index}</td>
+      <td style="max-width:180px">
+        <div style="font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.name)}">${esc(r.name)}</div>
+        <div style="font-size:.73rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.email||"")}</div>
       </td>
-      <td style="font-size:.75rem;color:var(--dim)">${esc(r.resume_name||"—")}</td>
-      <td><span style="font-size:.7rem;color:${mcol};font-weight:700">${esc(r.match_method||"—")}</span></td>
-      <td><span class="bh-badge ${scls}">${slabel}</span></td>
-      <td>
-        ${p > 0 ? `<span class="bh-conf-bar"><span class="bh-conf-fill" style="width:${p}%;background:${col}"></span></span>
-        <span style="font-size:.79rem;color:var(--muted)">${p}%</span>` : '<span style="color:var(--dim)">—</span>'}
+      <td style="font-size:.74rem;color:var(--dim);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.resume_name||"")}">${esc(r.resume_name||"—")}</td>
+      <td style="width:90px"><span style="font-size:.7rem;color:${mcol};font-weight:700">${esc(r.match_method||"—")}</span></td>
+      <td style="width:110px"><span class="bh-badge ${scls}">${slabel}</span></td>
+      <td style="width:120px">
+        ${p > 0 ? `
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="bh-conf-bar"><span class="bh-conf-fill" style="width:${p}%;background:${col}"></span></span>
+            <span style="font-size:.79rem;color:var(--muted);white-space:nowrap">${p}%</span>
+          </div>` : '<span style="color:var(--dim)">—</span>'}
       </td>
-      <td style="font-size:.78rem;color:var(--dim)">${dateStr}</td>
-      <td>
+      <td style="font-size:.78rem;color:var(--dim);width:100px;white-space:nowrap">${dateStr}</td>
+      <td style="width:110px">
         <div class="bh-actions">
           ${r.profile ? `<button class="bh-btn" onclick="viewProfile('${safeKey}')" title="View">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>

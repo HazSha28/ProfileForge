@@ -99,10 +99,10 @@ function upsertRow(c) {
   tr.innerHTML = `
     <td style="color:var(--dim);font-size:.78rem;">${c.index}</td>
     <td>
-      <div style="font-weight:700;color:var(--text)">${esc(c.name)}</div>
-      <div style="font-size:.73rem;color:var(--dim)">${esc(c.email || "")}</div>
+      <div class="bp-candidate-name" title="${esc(c.name)}">${esc(c.name)}</div>
+      <div class="bp-candidate-email" title="${esc(c.email || "")}">${esc(c.email || "")}</div>
     </td>
-    <td style="font-size:.76rem;color:var(--dim)">${esc(c.resume_name || "—")}</td>
+    <td style="font-size:.74rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(c.resume_name || "")}">${esc(c.resume_name || "—")}</td>
     <td>${matchBadge(c.match_method)}</td>
     <td>${badgeHTML(c.status)}</td>
     <td>
@@ -111,7 +111,7 @@ function upsertRow(c) {
           <div class="bp-conf__bar">
             <div class="bp-conf__fill" style="width:${confPct}%;background:${confCol}"></div>
           </div>
-          <span style="font-size:.78rem;color:var(--muted)">${confPct}%</span>
+          <span style="font-size:.76rem;color:var(--muted);white-space:nowrap">${confPct}%</span>
         </div>` : '<span style="color:var(--dim);font-size:.76rem;">—</span>'}
     </td>
   `;

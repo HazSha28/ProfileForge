@@ -76,7 +76,7 @@
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 14px; overflow: hidden;
 }
-.bp-table { width: 100%; border-collapse: collapse; }
+.bp-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .bp-table th {
   padding: 10px 14px; text-align: left; font-size: .68rem;
   font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
@@ -84,12 +84,32 @@
   border-bottom: 1px solid var(--border);
 }
 .bp-table td {
-  padding: 12px 14px; font-size: .83rem; color: var(--text-2);
+  padding: 10px 14px; font-size: .83rem; color: var(--text-2);
   border-bottom: 1px solid var(--border); vertical-align: middle;
+  overflow: hidden;
 }
 .bp-table tbody tr:last-child td { border-bottom: none; }
 .bp-table tbody tr { transition: background .15s; }
 .bp-table tbody tr:hover { background: var(--surface-2); }
+
+/* Fixed column widths */
+.bp-table th:nth-child(1), .bp-table td:nth-child(1) { width: 40px; }   /* # */
+.bp-table th:nth-child(2), .bp-table td:nth-child(2) { width: 26%; }    /* Candidate */
+.bp-table th:nth-child(3), .bp-table td:nth-child(3) { width: 22%; }    /* Resume */
+.bp-table th:nth-child(4), .bp-table td:nth-child(4) { width: 90px; }   /* Match */
+.bp-table th:nth-child(5), .bp-table td:nth-child(5) { width: 110px; }  /* Status */
+.bp-table th:nth-child(6), .bp-table td:nth-child(6) { width: 130px; }  /* Confidence */
+
+/* Name cell — truncate long names */
+.bp-candidate-name {
+  font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
+}
+.bp-candidate-email {
+  font-size: .73rem; color: var(--dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 /* Status badges */
 .bp-badge {
@@ -104,10 +124,14 @@
 .bp-badge--pending    { background: var(--surface-2); color: var(--dim); }
 
 /* Confidence mini-bar */
-.bp-conf { display: flex; align-items: center; gap: 6px; }
+.bp-conf {
+  display: flex; align-items: center; gap: 6px;
+  min-width: 0; /* prevent flex overflow */
+}
 .bp-conf__bar {
-  width: 60px; height: 4px; background: var(--border);
-  border-radius: 2px; overflow: hidden;
+  width: 60px; min-width: 60px; height: 4px;
+  background: var(--border); border-radius: 2px; overflow: hidden;
+  flex-shrink: 0;
 }
 .bp-conf__fill { height: 100%; border-radius: 2px; }
 
