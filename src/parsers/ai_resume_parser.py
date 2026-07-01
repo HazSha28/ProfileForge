@@ -143,7 +143,15 @@ Resume text:
 
 
 def is_available() -> bool:
-    """Return True if at least one Gemini key is available and not in cooldown."""
+    """Return True if Groq OR at least one Gemini key is available."""
+    groq_key = os.environ.get("GROQ_API_KEY", "").strip()
+    if groq_key and not groq_key.startswith("your-"):
+        try:
+            from groq import Groq  # noqa: F401
+            return True
+        except ImportError:
+            pass
+    # Fall through to Gemini check
     try:
         from google import genai  # noqa: F401
     except ImportError:
@@ -153,27 +161,105 @@ def is_available() -> bool:
 
 def extract(raw_text: str) -> Optional[CandidateRecord]:
     """
-    Extract resume fields via Gemini with automatic key rotation.
-    Returns None on all keys exhausted — regex fallback runs automatically.
+    Extract resume fields. Priority:
+      1. Groq (llama-3.3-70b) — free, fast, generous quota
+      2. Gemini (gemini-2.0-flash) — fallback with key rotation
+      3. Returns None → regex extraction runs automatically
     """
+    # ── Try Groq first ─────────────────────────────────────────
+    result = _extract_with_groq(raw_text)
+    if result:
+        return result
+
+    # ── Try Gemini as fallback ─────────────────────────────────
+    result = _extract_with_gemini(raw_text)
+    if result:
+        return result
+
+    logger.info("All AI extractors failed — regex fallback will run.")
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Groq extractor
+# ---------------------------------------------------------------------------
+
+def _extract_with_groq(raw_text: str) -> Optional[CandidateRecord]:
+    """Extract using Groq API (llama-3.3-70b-versatile)."""
+    api_key = os.environ.get("GROQ_API_KEY", "").strip()
+    if not api_key or api_key.startswith("your-"):
+        return None
+
+    try:
+        from groq import Groq
+    except ImportError:
+        logger.warning("groq package not installed — skipping Groq extraction.")
+        return None
+
+    prompt = _EXTRACTION_PROMPT.replace("{resume_text}", raw_text[:12000])
+
+    try:
+        client = Groq(api_key=api_key)
+        chat   = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert Resume Information Extraction Engine. "
+                        "Return ONLY valid JSON. No markdown, no explanation."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.0,
+            max_tokens=4096,
+        )
+
+        raw_json = chat.choices[0].message.content.strip()
+        if raw_json.startswith("```"):
+            raw_json = raw_json.split("```")[1]
+            if raw_json.startswith("json"):
+                raw_json = raw_json[4:]
+        raw_json = raw_json.strip()
+
+        data = json.loads(raw_json)
+        logger.info("Groq extraction succeeded.")
+        return _to_candidate_record(data)
+
+    except json.JSONDecodeError as exc:
+        logger.error("Groq returned invalid JSON: %s", exc)
+        return None
+    except Exception as exc:
+        err = str(exc)
+        if "rate" in err.lower() or "429" in err or "quota" in err.lower():
+            logger.warning("Groq rate limit hit — trying Gemini fallback.")
+        else:
+            logger.error("Groq extraction failed: %s", exc)
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Gemini extractor (fallback)
+# ---------------------------------------------------------------------------
+
+def _extract_with_gemini(raw_text: str) -> Optional[CandidateRecord]:
+    """Extract using Gemini API with key rotation."""
     try:
         from google import genai
         from google.genai import types as genai_types
     except ImportError:
-        logger.warning("google-genai not installed — using regex fallback.")
         return None
 
     keys = _get_available_keys()
     if not keys:
-        logger.info("All Gemini keys exhausted — using regex fallback.")
         return None
 
     prompt = _EXTRACTION_PROMPT.replace("{resume_text}", raw_text[:12000])
 
     for api_key in keys:
-        logger.info("Trying Gemini key ...%s", api_key[-6:])
         try:
-            client = genai.Client(api_key=api_key)
+            client   = genai.Client(api_key=api_key)
             response = client.models.generate_content(
                 model="gemini-2.0-flash",
                 contents=prompt,
@@ -191,24 +277,20 @@ def extract(raw_text: str) -> Optional[CandidateRecord]:
             raw_json = raw_json.strip()
 
             data = json.loads(raw_json)
-            logger.info("AI extraction succeeded with key ...%s", api_key[-6:])
+            logger.info("Gemini extraction succeeded with key ...%s", api_key[-6:])
             return _to_candidate_record(data)
 
         except json.JSONDecodeError as exc:
-            logger.error("AI extraction returned invalid JSON: %s", exc)
+            logger.error("Gemini returned invalid JSON: %s", exc)
             _record_key_failure(api_key)
-            continue
-
         except Exception as exc:
-            err_str = str(exc)
-            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower():
-                logger.warning("Key ...%s quota exceeded — trying next key.", api_key[-6:])
+            err = str(exc)
+            if "429" in err or "RESOURCE_EXHAUSTED" in err or "quota" in err.lower():
+                logger.warning("Gemini key ...%s quota exceeded.", api_key[-6:])
             else:
-                logger.error("AI extraction failed: %s", exc)
+                logger.error("Gemini extraction failed: %s", exc)
             _record_key_failure(api_key)
-            continue
 
-    logger.warning("All Gemini keys failed — using regex fallback.")
     return None
 
 
