@@ -1,6 +1,7 @@
 /* ============================================================
    ProfileForge — SaaS Design System (FastAPI edition)
    Theme: Ash White · Coffee Brown · Navy sidebar
+   Dark mode: [data-theme="dark"] on <html>
    ============================================================ */
 :root {
   --bg:          #f0eeeb;
@@ -34,6 +35,24 @@
   --mono:        'Cascadia Code','Fira Code',monospace;
   --sidebar-w:   240px;
   --topbar-h:    56px;
+}
+
+/* ── Dark mode token overrides ───────────────────────────────── */
+[data-theme="dark"] {
+  --bg:          #0f1117;
+  --surface:     #1a1d27;
+  --surface-2:   #222533;
+  --surface-3:   #2a2e3f;
+  --border:      #2e3348;
+  --border-2:    #3a3f58;
+  --brown-glow:  rgba(196,154,114,.06);
+  --text:        #f0ede8;
+  --text-2:      #d4cfc8;
+  --muted:       #9a8f84;
+  --dim:         #6a6058;
+  --shadow:      0 2px 16px rgba(0,0,0,.4);
+  --shadow-sm:   0 1px 6px rgba(0,0,0,.25);
+  /* Accent colours stay the same — brown/green/amber look good on dark */
 }
 
 /* ── Reset ───────────────────────────────────────────────────── */
@@ -169,7 +188,26 @@ a{color:var(--brown-l);text-decoration:none}
   flex-shrink: 0;
 }
 
-/* ── Topbar sidebar toggle button ───────────────────────────── */
+/* ── Dark mode toggle button ─────────────────────────────────── */
+.pf-theme-toggle {
+  width: 34px; height: 34px;
+  background: none; border: 1px solid var(--border);
+  border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); transition: background .18s, border-color .18s, color .18s;
+  flex-shrink: 0;
+}
+.pf-theme-toggle:hover {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+  color: var(--text-2);
+}
+/* Light mode: show moon, hide sun */
+.pf-theme-toggle__sun  { display: none; }
+.pf-theme-toggle__moon { display: block; }
+/* Dark mode: show sun, hide moon */
+[data-theme="dark"] .pf-theme-toggle__sun  { display: block; }
+[data-theme="dark"] .pf-theme-toggle__moon { display: none; }
 .pf-topbar__sidebar-toggle {
   width: 36px; height: 36px; flex-shrink: 0;
   background: none; border: none; cursor: pointer;

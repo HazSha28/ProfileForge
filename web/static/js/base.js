@@ -5,7 +5,30 @@ const toggle    = document.getElementById("sidebar-toggle");
 const overlay   = document.getElementById("sidebar-overlay");
 
 const COLLAPSED_KEY = "pf_sidebar_collapsed";
-const MOBILE_BP     = 700; // matches CSS breakpoint
+const THEME_KEY     = "pf_theme";
+const MOBILE_BP     = 700;
+
+// ── Theme (dark / light) ───────────────────────────────────────
+const themeToggle = document.getElementById("theme-toggle");
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+// Restore saved theme on load
+(function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === "dark") {
+    applyTheme("dark");
+  }
+  // else stays light (no attribute needed)
+})();
+
+themeToggle?.addEventListener("click", () => {
+  const current = document.documentElement.dataset.theme;
+  applyTheme(current === "dark" ? "light" : "dark");
+});
 
 // ── Helpers ────────────────────────────────────────────────────
 function isMobile() {
