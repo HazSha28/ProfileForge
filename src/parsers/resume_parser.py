@@ -253,33 +253,114 @@ _RE_SKILL_SPLIT = re.compile(r"[,|•·\n]+")
 # Public API
 # ---------------------------------------------------------------------------
 
-def parse(pdf_path: str) -> CandidateRecord:
+def parse(resume_path: str) -> CandidateRecord:
     """
-    Extract candidate data from a resume PDF and return a CandidateRecord.
+    Extract candidate data from a resume file (PDF or DOCX) and return a CandidateRecord.
+
+    Supports:
+      .pdf  — text extraction via pdfplumber + embedded links via PyMuPDF
+      .docx — text extraction via python-docx (paragraphs + tables)
 
     The extraction is best-effort: fields that cannot be located are set to
     None/[] rather than raising exceptions.
 
     Args:
-        pdf_path: Path to the resume PDF file.
+        resume_path: Path to the resume file (.pdf or .docx).
 
     Returns:
         CandidateRecord with source="Resume".
 
     Raises:
-        ParseError: If the file cannot be opened or pdfplumber fails.
+        ParseError: If the file cannot be opened or parsed.
+    """
+    path = Path(resume_path)
+    if not path.exists():
+        raise ParseError(f"Resume file not found: {resume_path}")
+
+    ext = path.suffix.lower()
+
+    if ext == ".docx":
+        return _parse_docx(resume_path)
+    elif ext == ".pdf":
+        return _parse_pdf(resume_path)
+    else:
+        raise ParseError(f"Unsupported resume format: {ext}. Use .pdf or .docx")
+
+
+def _parse_docx(docx_path: str) -> CandidateRecord:
+    """
+    Extract candidate data from a DOCX resume.
+
+    Uses python-docx to extract all text from paragraphs and tables,
+    then runs the same AI/regex pipeline as the PDF parser.
+    """
+    path = Path(docx_path)
+    logger.info("Parsing resume DOCX: %s", docx_path)
+
+    try:
+        import docx as python_docx
+    except ImportError:
+        raise ParseError(
+            "python-docx is not installed. Run: pip install python-docx"
+        )
+
+    try:
+        doc = python_docx.Document(docx_path)
+
+        text_parts: list[str] = []
+
+        # Extract all paragraphs
+        for para in doc.paragraphs:
+            if para.text.strip():
+                text_parts.append(para.text)
+
+        # Extract all table cells (skills are often in tables in DOCX resumes)
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = " | ".join(
+                    cell.text.strip() for cell in row.cells if cell.text.strip()
+                )
+                if row_text:
+                    text_parts.append(row_text)
+
+        full_text = "\n".join(text_parts)
+        logger.debug("Extracted %d characters from DOCX", len(full_text))
+
+    except Exception as exc:
+        raise ParseError(f"Failed to open DOCX {docx_path}: {exc}") from exc
+
+    # Extract hyperlinks from DOCX relationships
+    docx_links = _extract_docx_links(docx_path)
+    logger.debug("DOCX links: %s", docx_links)
+
+    if not full_text:
+        logger.warning("No extractable text found in DOCX: %s", docx_path)
+        return CandidateRecord(source="Resume", links=docx_links)
+
+    # Run same AI/regex pipeline as PDF
+    from src.parsers import ai_resume_parser
+
+    if ai_resume_parser.is_available():
+        ai_record = ai_resume_parser.extract(full_text)
+        if ai_record:
+            logger.info("Using AI-extracted DOCX record.")
+            ai_record.links = _merge_links(ai_record.links, docx_links)
+            return ai_record
+        logger.warning("AI extraction failed for DOCX — falling back to regex.")
+
+    # Regex fallback
+    logger.info("Using regex-based DOCX extraction.")
+    return _regex_extract(full_text, docx_links)
+
+
+def _parse_pdf(pdf_path: str) -> CandidateRecord:
+    """
+    Extract candidate data from a PDF resume (original logic).
     """
     path = Path(pdf_path)
-    if not path.exists():
-        raise ParseError(f"Resume PDF not found: {pdf_path}")
-
     logger.info("Parsing resume PDF: %s", pdf_path)
 
     try:
-        # CONCEPT — pdfplumber.open():
-        #   pdfplumber is a library that extracts text from PDFs while
-        #   preserving layout information. We iterate over every page and
-        #   concatenate the text with newline separators.
         with pdfplumber.open(path) as pdf:
             pages_text = []
             for page in pdf.pages:
@@ -298,40 +379,71 @@ def parse(pdf_path: str) -> CandidateRecord:
     except Exception as exc:
         raise ParseError(f"Failed to open PDF {pdf_path}: {exc}") from exc
 
-    # --- Extract embedded hyperlinks via PyMuPDF (fitz) ---
-    # This runs regardless of whether AI or regex is used for text fields,
-    # because link annotations are separate from text content.
     fitz_links = _extract_embedded_links(pdf_path)
     logger.debug("PyMuPDF links: %s", fitz_links)
 
-    # --- Try AI extraction first, fall back to regex ---
     from src.parsers import ai_resume_parser
 
     if ai_resume_parser.is_available() and full_text:
         ai_record = ai_resume_parser.extract(full_text)
         if ai_record:
             logger.info("Using AI-extracted resume record.")
-            # Merge AI-extracted links with fitz-extracted links
             ai_record.links = _merge_links(ai_record.links, fitz_links)
             return ai_record
         logger.warning("AI extraction failed — falling back to regex parser.")
 
-    # --- Regex fallback ---
     logger.info("Using regex-based resume extraction.")
-    emails = _extract_emails(full_text)
-    phones = _extract_phones(full_text)
+    return _regex_extract(full_text, fitz_links)
+
+
+def _extract_docx_links(docx_path: str) -> LinksData:
+    """Extract hyperlinks from DOCX relationship XML."""
+    linkedin = github = portfolio = None
+    other: list[str] = []
+    try:
+        import zipfile, xml.etree.ElementTree as ET
+        with zipfile.ZipFile(docx_path) as z:
+            # Relationships file contains all hyperlinks
+            if "word/_rels/document.xml.rels" in z.namelist():
+                with z.open("word/_rels/document.xml.rels") as f:
+                    tree = ET.parse(f)
+                    for rel in tree.iter():
+                        target = rel.get("Target", "")
+                        if not target.startswith("http"):
+                            continue
+                        tl = target.lower()
+                        if "linkedin.com" in tl and not linkedin:
+                            linkedin = target
+                        elif "github.com" in tl and not github:
+                            github = target
+                        elif not portfolio and _looks_like_portfolio(target):
+                            portfolio = target
+                        else:
+                            other.append(target)
+    except Exception as exc:
+        logger.debug("DOCX link extraction failed: %s", exc)
+    return LinksData(
+        linkedin=linkedin, github=github, portfolio=portfolio,
+        other=list(dict.fromkeys(other)),
+    )
+
+
+def _regex_extract(full_text: str, links: LinksData) -> CandidateRecord:
+    """Run regex extraction on text and merge with pre-extracted links."""
+    emails   = _extract_emails(full_text)
+    phones   = _extract_phones(full_text)
     linkedin = _extract_linkedin(full_text)
-    github = _extract_github(full_text)
+    github   = _extract_github(full_text)
     portfolio = _extract_portfolio(full_text)
-    skills = _extract_skills(full_text)
+    skills   = _extract_skills(full_text)
     experience, years_exp = _extract_experience(full_text)
     full_name = _extract_name(full_text)
-    headline = _extract_headline(full_text)
-    location = _extract_location(full_text)
+    headline  = _extract_headline(full_text)
+    location  = _extract_location(full_text)
 
-    # Merge regex links with fitz links
-    regex_links = LinksData(linkedin=linkedin, github=github, portfolio=portfolio)
-    merged_links = _merge_links(regex_links, fitz_links)
+    # Merge regex-found links with pre-extracted links (PDF/DOCX)
+    regex_links  = LinksData(linkedin=linkedin, github=github, portfolio=portfolio)
+    merged_links = _merge_links(regex_links, links)
 
     record = CandidateRecord(
         source="Resume",
@@ -354,7 +466,6 @@ def parse(pdf_path: str) -> CandidateRecord:
         len(skills),
         len(experience),
     )
-
     return record
 
 

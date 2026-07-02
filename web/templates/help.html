@@ -288,24 +288,19 @@
 
 <!-- PDF Source -->
 <section class="help-section" id="pdf-source">
-  <h2 class="help-h2">Resume PDF</h2>
-  <p class="help-p">ProfileForge uses AI (Gemini 1.5 Flash) when a key is configured, or falls back to regex extraction.</p>
+  <h2 class="help-h2">Resume File (PDF or DOCX)</h2>
+  <p class="help-p">ProfileForge accepts both <strong>PDF</strong> and <strong>DOCX</strong> (Word) resumes. It uses AI (Groq/Gemini) when configured, or falls back to regex extraction.</p>
   <div class="help-table-wrap">
     <table class="help-table">
-      <thead><tr><th>Field</th><th>Method</th><th>Notes</th></tr></thead>
+      <thead><tr><th>Format</th><th>Text extraction</th><th>Link extraction</th></tr></thead>
       <tbody>
-        <tr><td>Name</td><td>First non-contact line heuristic</td><td>Best when name is on line 1</td></tr>
-        <tr><td>Email</td><td>RFC 5321 regex + AI</td><td>All emails captured</td></tr>
-        <tr><td>Phone</td><td>International regex + phonenumbers library</td><td>All formats → E.164</td></tr>
-        <tr><td>LinkedIn / GitHub</td><td>URL pattern + PyMuPDF link annotations</td><td>Catches hidden hyperlinks</td></tr>
-        <tr><td>Technical Skills</td><td>Skills section detection + AI</td><td>Comma, pipe, bullet delimiters</td></tr>
-        <tr><td>Soft Skills</td><td>Soft Skills / Extracurricular section</td><td>Communication, Leadership, etc.</td></tr>
-        <tr><td>Experience</td><td>Date range pattern + AI</td><td>ISO 8601 normalised</td></tr>
+        <tr><td>.pdf</td><td>pdfplumber (all pages)</td><td>PyMuPDF (embedded annotations)</td></tr>
+        <tr><td>.docx</td><td>python-docx (paragraphs + tables)</td><td>DOCX relationship XML</td></tr>
       </tbody>
     </table>
   </div>
   <div class="help-callout help-callout--warn">
-    <strong>Scanned PDFs</strong> are not supported — they contain no extractable text. Use text-based PDFs only.
+    <strong>Scanned PDFs</strong> are not supported — they contain no extractable text. Use text-based PDFs or DOCX files only.
   </div>
 </section>
 <hr class="help-divider"/>
