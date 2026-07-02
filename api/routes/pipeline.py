@@ -62,16 +62,22 @@ async def process(
     # We read their bytes and write to temp files for our parsers.
     with tempfile.TemporaryDirectory() as tmp_dir:
         import os
-        csv_path = os.path.join(tmp_dir, "recruiter.csv")
-        pdf_path = os.path.join(tmp_dir, "resume.pdf")
+        from pathlib import Path
 
-        # Read async upload bytes and write synchronously to disk
+        csv_path = os.path.join(tmp_dir, "recruiter.csv")
+
+        # Preserve the actual file extension so resume_parser knows PDF vs DOCX
+        resume_ext = Path(resume.filename or "resume.pdf").suffix.lower() or ".pdf"
+        if resume_ext not in (".pdf", ".docx"):
+            resume_ext = ".pdf"
+        resume_path = os.path.join(tmp_dir, f"resume{resume_ext}")
+
         csv_bytes = await csv.read()
         with open(csv_path, "wb") as f:
             f.write(csv_bytes)
 
         pdf_bytes = await resume.read()
-        with open(pdf_path, "wb") as f:
+        with open(resume_path, "wb") as f:
             f.write(pdf_bytes)
 
         # --- Parse config ---
@@ -107,7 +113,7 @@ async def process(
             )
 
         try:
-            resume_record = parse_resume(pdf_path)
+            resume_record = parse_resume(resume_path)
         except ParseError as exc:
             logger.error("Resume parse failed: %s", exc)
             raise HTTPException(status_code=422, detail=f"Resume parsing failed: {exc}")
