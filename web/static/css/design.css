@@ -159,38 +159,62 @@ a{color:var(--brown-l);text-decoration:none}
 .pf-sidebar.collapsed {
   width: 58px;
 }
+/* Brand row in collapsed: remove all padding, center the logo */
 .pf-sidebar.collapsed .pf-sidebar__brand {
   padding: 0;
   justify-content: center;
+  width: 58px;
 }
-/* Logo in collapsed mode — small, centered, no oversized box */
 .pf-sidebar.collapsed .pf-sidebar__logo {
   width: 26px; height: 26px;
   border-radius: 6px; padding: 2px;
+  margin: 0;
 }
 .pf-sidebar.collapsed .pf-sidebar__brand-name {
-  opacity: 0; width: 0; pointer-events: none;
+  display: none;
 }
+/* Nav items centered */
 .pf-sidebar.collapsed .pf-nav-item__label,
 .pf-sidebar.collapsed .pf-nav-badge {
-  opacity: 0; width: 0; overflow: hidden; pointer-events: none;
+  display: none;
 }
 .pf-sidebar.collapsed .pf-nav-item {
   justify-content: center; padding: 9px; gap: 0;
+  width: 58px;
 }
 .pf-sidebar.collapsed .pf-nav-item__icon { opacity: 1; }
+/* Footer in collapsed: remove padding, center avatar */
+.pf-sidebar.collapsed .pf-sidebar__footer {
+  padding: 8px 0;
+  display: flex;
+  justify-content: center;
+  width: 58px;
+}
 .pf-sidebar.collapsed .pf-user-chip {
-  padding: 8px 6px; justify-content: center;
+  padding: 6px;
+  justify-content: center;
+  gap: 0;
+  background: transparent;
+  border-color: transparent;
+  width: 42px;
 }
 .pf-sidebar.collapsed .pf-user-chip__info,
 .pf-sidebar.collapsed .pf-user-chip__logout {
-  opacity: 0; width: 0; overflow: hidden; pointer-events: none;
+  display: none;
 }
-/* Keep avatar exactly 28px in collapsed mode */
 .pf-sidebar.collapsed .pf-user-chip__avatar,
 .pf-sidebar.collapsed .pf-user-chip__initials {
   width: 28px !important; height: 28px !important;
   min-width: 28px; max-width: 28px; flex-shrink: 0;
+  margin: 0;
+}
+.pf-sidebar.collapsed .pf-sidebar__signin {
+  padding: 8px;
+  justify-content: center;
+  width: 42px;
+}
+.pf-sidebar.collapsed .pf-sidebar__signin span {
+  display: none;
 }
 
 /* ── Dark mode toggle button ─────────────────────────────────── */
