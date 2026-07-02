@@ -67,21 +67,51 @@ function checkReady() {
 }
 
 // ── Form submit ────────────────────────────────────────────────
-const form        = document.getElementById("bulk-form");
-const errorBanner = document.getElementById("error-banner");
-const errorText   = document.getElementById("error-text");
-const btnLabel    = document.getElementById("btn-label");
-const btnSpinner  = document.getElementById("btn-spinner");
+const form     = document.getElementById("bulk-form");
+const btnLabel  = document.getElementById("btn-label");
+const btnSpinner = document.getElementById("btn-spinner");
+
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
 
 function showError(msg) {
-  if (errorBanner) { errorBanner.hidden = false; }
-  if (errorText)   { errorText.textContent = msg; }
+  document.getElementById("pf-bulk-error-toast")?.remove();
+  const toast = document.createElement("div");
+  toast.id = "pf-bulk-error-toast";
+  toast.style.cssText = `
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+    z-index:9999; min-width:320px; max-width:520px;
+    background:#2a0f0f; border:1px solid rgba(150,48,48,.5);
+    border-radius:10px; padding:14px 18px;
+    display:flex; align-items:flex-start; gap:12px;
+    box-shadow:0 8px 32px rgba(0,0,0,.4);
+    animation:slideUp .25s ease;
+  `;
+  toast.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" width="18" height="18" style="flex-shrink:0;margin-top:1px">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+      <circle cx="12" cy="16" r=".5" fill="#f87171" stroke="#f87171"/>
+    </svg>
+    <div style="flex:1">
+      <div style="font-size:.85rem;font-weight:700;color:#fca5a5;margin-bottom:3px">Error</div>
+      <div style="font-size:.8rem;color:#f87171;line-height:1.5">${esc(msg)}</div>
+    </div>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#6b2020;font-size:1.1rem;line-height:1;padding:0 0 0 4px;flex-shrink:0">✕</button>
+  `;
+  if (!document.getElementById("pf-toast-style")) {
+    const s = document.createElement("style");
+    s.id = "pf-toast-style";
+    s.textContent = `@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`;
+    document.head.appendChild(s);
+  }
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 8000);
 }
 
 if (form) {
   form.addEventListener("submit", async e => {
     e.preventDefault();
-    if (errorBanner) errorBanner.hidden = true;
 
     const csvFile = csvInput?.files?.[0];
     const zipFile = zipInput?.files?.[0];

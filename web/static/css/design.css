@@ -57,6 +57,7 @@
 
 /* ── Reset ───────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden] { display: none !important; }
 html{font-size:16px;scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--bg);color:var(--text-2);min-height:100vh}
 img,svg{display:block}
