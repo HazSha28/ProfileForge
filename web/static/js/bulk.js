@@ -23,15 +23,16 @@ function initDropZone(zoneId, inputId, chipId, nameId, clearKey) {
     if (input.files[0]) setFile(input, input.files[0], chip, nameEl, zone);
   });
 
-  // Clear button
-  document.querySelectorAll(`[data-clear="${clearKey}"]`).forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      input.value = "";
-      chip.hidden = true;
-      zone.hidden = false;
-      checkReady();
-    });
+  // Clear button — use event delegation to avoid timing issues
+  document.addEventListener("click", e => {
+    const btn = e.target.closest(`[data-clear="${clearKey}"]`);
+    if (!btn) return;
+    e.stopPropagation();
+    e.preventDefault();
+    input.value = "";
+    chip.hidden = true;
+    zone.hidden = false;
+    checkReady();
   });
 }
 

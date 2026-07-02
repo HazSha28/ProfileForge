@@ -64,9 +64,15 @@ function clearFile(type) {
 
 document.getElementById("csv-input").addEventListener("change", e => selectFile("csv", e.target.files[0]));
 document.getElementById("pdf-input").addEventListener("change", e => selectFile("pdf", e.target.files[0]));
-document.querySelectorAll("[data-clear]").forEach(btn =>
-  btn.addEventListener("click", e => { e.stopPropagation(); clearFile(btn.dataset.clear); })
-);
+
+// Use event delegation on document for clear buttons — works even when chip is hidden/shown dynamically
+document.addEventListener("click", e => {
+  const btn = e.target.closest("[data-clear]");
+  if (!btn) return;
+  e.stopPropagation();
+  e.preventDefault();
+  clearFile(btn.dataset.clear);
+});
 
 // ── Pipeline stage UI ──────────────────────────────────────────
 function addStage(text, status) {
