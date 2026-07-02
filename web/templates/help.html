@@ -179,6 +179,9 @@
   <p class="help-toc__section">Reference</p>
   <a href="#phone-formats"  class="help-toc__link">Phone Formats</a>
   <a href="#skills-map"     class="help-toc__link">Skills Aliases</a>
+  <a href="#dark-mode"      class="help-toc__link">Dark Mode</a>
+  <a href="#email-notif"    class="help-toc__link">Email Notifications</a>
+  <a href="#deployment"     class="help-toc__link">Deployment</a>
   <a href="#faq"            class="help-toc__link">FAQ</a>
 </aside>
 
@@ -582,10 +585,79 @@
 </section>
 <hr class="help-divider"/>
 
+<!-- Dark Mode -->
+<section class="help-section" id="dark-mode">
+  <h2 class="help-h2">Dark Mode</h2>
+  <p class="help-p">ProfileForge has a built-in dark mode. Click the <strong>moon icon</strong> in the topbar to toggle between light and dark. Your preference is saved and restored on every page load.</p>
+  <div class="help-callout help-callout--info">
+    <strong>Shortcut:</strong> The moon/sun icon is always visible in the top-right of the topbar, next to the page action buttons.
+  </div>
+  <div class="help-table-wrap">
+    <table class="help-table">
+      <thead><tr><th>Mode</th><th>Icon shown</th><th>Click action</th></tr></thead>
+      <tbody>
+        <tr><td>Light mode (default)</td><td>🌙 Moon</td><td>Switch to dark mode</td></tr>
+        <tr><td>Dark mode</td><td>☀️ Sun</td><td>Switch to light mode</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<hr class="help-divider"/>
+
+<!-- Email Notifications -->
+<section class="help-section" id="email-notif">
+  <h2 class="help-h2">Email Notifications</h2>
+  <p class="help-p">ProfileForge can send a summary email when a bulk processing job completes — showing total processed, average confidence, failed, and resume-missing counts.</p>
+  <p class="help-p"><strong>Setup (Gmail recommended):</strong></p>
+  <ol class="help-steps">
+    <li class="help-step"><div class="help-step__num">1</div><div class="help-step__body"><strong>Enable 2FA</strong><p>Go to your Google account → Security → 2-Step Verification → enable it.</p></div></li>
+    <li class="help-step"><div class="help-step__num">2</div><div class="help-step__body"><strong>Generate an App Password</strong><p>myaccount.google.com → Security → App Passwords → select Mail → Generate. Copy the 16-character password.</p></div></li>
+    <li class="help-step"><div class="help-step__num">3</div><div class="help-step__body"><strong>Add to .env</strong><p>Set <code>EMAIL_USER</code>, <code>EMAIL_PASSWORD</code>, and <code>EMAIL_HOST=smtp.gmail.com</code>.</p></div></li>
+  </ol>
+  <pre class="help-code">EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your@gmail.com
+EMAIL_PASSWORD=xxxx xxxx xxxx xxxx
+EMAIL_FROM_NAME=ProfileForge</pre>
+  <div class="help-callout help-callout--warn">
+    If <code>EMAIL_HOST</code> / <code>EMAIL_USER</code> / <code>EMAIL_PASSWORD</code> are not set, email is silently skipped — bulk processing always completes regardless.
+  </div>
+</section>
+<hr class="help-divider"/>
+
+<!-- Deployment -->
+<section class="help-section" id="deployment">
+  <h2 class="help-h2">Deployment (Render.com)</h2>
+  <p class="help-p">ProfileForge includes <code>render.yaml</code> and <code>Procfile</code> for one-click deployment on Render's free tier.</p>
+  <ol class="help-steps">
+    <li class="help-step"><div class="help-step__num">1</div><div class="help-step__body"><strong>Push to GitHub</strong><p>Ensure your latest code is on the main branch.</p></div></li>
+    <li class="help-step"><div class="help-step__num">2</div><div class="help-step__body"><strong>Connect on Render</strong><p>render.com → New → Web Service → connect your GitHub repo.</p></div></li>
+    <li class="help-step"><div class="help-step__num">3</div><div class="help-step__body"><strong>Set start command</strong><p><code>uvicorn server:app --host 0.0.0.0 --port $PORT</code></p></div></li>
+    <li class="help-step"><div class="help-step__num">4</div><div class="help-step__body"><strong>Add environment variables</strong><p>Add all keys from <code>.env.example</code> in Render's Environment tab.</p></div></li>
+    <li class="help-step"><div class="help-step__num">5</div><div class="help-step__body"><strong>Fix OAuth redirect URIs</strong><p>Add <code>https://your-app.onrender.com/auth/google/callback</code> in Google Cloud Console and GitHub OAuth App settings.</p></div></li>
+  </ol>
+  <div class="help-callout help-callout--warn">
+    <strong>Free tier cold starts:</strong> Render free tier spins down after 15 min of inactivity. Use <a href="https://uptimerobot.com" target="_blank" class="pf-link">UptimeRobot</a> (free) to ping <code>/api/health</code> every 5 minutes to keep the app warm.
+  </div>
+</section>
+<hr class="help-divider"/>
+
 <!-- FAQ -->
 <section class="help-section" id="faq">
   <h2 class="help-h2">FAQ</h2>
   <div class="help-faq">
+    <details class="help-faq__item">
+      <summary>How do I enable dark mode?</summary>
+      <p>Click the moon icon (🌙) in the topbar. It toggles between light and dark mode and remembers your preference across page loads via <code>localStorage</code>.</p>
+    </details>
+    <details class="help-faq__item">
+      <summary>Why isn't the email notification being sent after bulk processing?</summary>
+      <p>Email is only sent if <code>EMAIL_HOST</code>, <code>EMAIL_USER</code>, and <code>EMAIL_PASSWORD</code> are all set in your <code>.env</code> file. If any of them is missing, email is silently skipped and bulk processing still completes normally.</p>
+    </details>
+    <details class="help-faq__item">
+      <summary>My deployed app on Render is slow / times out.</summary>
+      <p>The free tier spins down after 15 minutes of inactivity and takes 30–60 seconds to cold start. Add a free UptimeRobot monitor pinging <code>/api/health</code> every 5 minutes to keep it warm. Alternatively, upgrade to Render's paid tier ($7/month) for always-on instances.</p>
+    </details>
     <details class="help-faq__item">
       <summary>My CSV has "Name of the Student" — will it work?</summary>
       <p>Yes. The bulk processor uses partial column-name matching, so <code>Name of the Student</code>, <code>Candidate Name</code>, <code>full_name</code>, and <code>name</code> all map to the name field automatically.</p>
