@@ -81,7 +81,7 @@
       {% if user and user.name %}
       <div class="pf-user-chip">
         {% if user.avatar %}
-        <img src="{{ user.avatar }}" alt="{{ user.name }}" class="pf-user-chip__avatar" />
+        <img src="{{ user.avatar }}" alt="{{ user.name }}" class="pf-user-chip__avatar" width="28" height="28" style="width:28px;height:28px;min-width:28px;max-width:28px;" />
         {% else %}
         <div class="pf-user-chip__initials">{{ user.name[:1] | upper }}</div>
         {% endif %}
