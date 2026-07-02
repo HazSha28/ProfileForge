@@ -334,6 +334,29 @@ class BulkProcessor:
             job_id, summary.processed, summary.total_candidates, elapsed
         )
 
+        # --- Send email notification if configured ---
+        try:
+            from src.services.email_service import send_bulk_summary, is_configured
+            if is_configured():
+                # Try to get recruiter email from CSV rows
+                recipient = next(
+                    (row.email for row in csv_rows if row.email), None
+                )
+                if recipient:
+                    send_bulk_summary(
+                        to_email   = recipient,
+                        job_id     = job_id,
+                        total      = summary.total_candidates,
+                        processed  = summary.processed,
+                        failed     = summary.failed,
+                        missing    = summary.resume_missing,
+                        avg_conf   = summary.average_confidence,
+                        duration   = summary.processing_time,
+                        output_dir = summary.output_dir,
+                    )
+        except Exception as exc:
+            logger.warning("Email notification failed (non-fatal): %s", exc)
+
         yield BulkEvent(
             type="job_complete", job_id=job_id,
             total=total, current=total,
